@@ -1,4 +1,6 @@
 #include "game_screen.h"
+
+#include "orbital.h"
 #include "sharp_display.h"
 
 GameScreen::GameScreen()
