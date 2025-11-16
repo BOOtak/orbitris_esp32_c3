@@ -22,6 +22,7 @@ void update_screen() {
 void init_game() {
   screens::game_screen = new GameScreen();
   current_screen = screens::game_screen;
+  current_screen->init();
 }
 
 void update_draw_frame() {

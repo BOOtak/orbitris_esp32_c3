@@ -3,7 +3,7 @@
 #include <cmath>
 
 float distance_acceleration(PlanetState state, float star_mass) {
-  float gravity_const = 6.67408 * pow(10, -11);
+  float gravity_const = 6.67408E-11;
   return state.distance.value * pow(state.angle.speed, 2) - (gravity_const * star_mass) / pow(state.distance.value, 2);
 }
 

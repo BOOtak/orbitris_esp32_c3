@@ -9,4 +9,8 @@
 
 void input_init();
 
+void input_update();
+
 bool is_key_down(int key);
+
+bool is_key_pressed(int key);
