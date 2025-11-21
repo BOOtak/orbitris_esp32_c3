@@ -15,7 +15,7 @@ float new_value(float current_value, float delta_time, float derivative) {
   return current_value + delta_time * derivative;
 }
 
-Vector2 state_to_coords(PlanetState state, float scale, Vector2 center) {
+Vector2 state_to_coords(const PlanetState& state, float scale, Vector2 center) {
   Vector2 result;
   float dist_to_scale = state.distance.value / scale;
   result.x = center.x + dist_to_scale * cos(state.angle.value);
@@ -23,12 +23,12 @@ Vector2 state_to_coords(PlanetState state, float scale, Vector2 center) {
   return result;
 }
 
-void update_planet_state(PlanetState* state, float dt, float star_mass) {
-  float dist_acc = distance_acceleration(*state, star_mass);
-  state->distance.speed = new_value(state->distance.speed, dt, dist_acc);
-  state->distance.value = new_value(state->distance.value, dt, state->distance.speed);
+void update_planet_state(PlanetState& state, float dt, float star_mass) {
+  float dist_acc = distance_acceleration(state, star_mass);
+  state.distance.speed = new_value(state.distance.speed, dt, dist_acc);
+  state.distance.value = new_value(state.distance.value, dt, state.distance.speed);
 
-  float angle_acc = angle_acceleratioin(*state);
-  state->angle.speed = new_value(state->angle.speed, dt, angle_acc);
-  state->angle.value = new_value(state->angle.value, dt, state->angle.speed);
+  float angle_acc = angle_acceleratioin(state);
+  state.angle.speed = new_value(state.angle.speed, dt, angle_acc);
+  state.angle.value = new_value(state.angle.value, dt, state.angle.speed);
 }
