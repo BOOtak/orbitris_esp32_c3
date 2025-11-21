@@ -40,10 +40,10 @@ void GameScreen::init() {
   reset_planet_state();
   delta_time_ = 3600 * 24;
 
-  tilemap_[4][4].occupied = true;
-  tilemap_[4][5].occupied = true;
-  tilemap_[5][4].occupied = true;
-  tilemap_[5][5].occupied = true;
+  tilemap_[TILES_X / 2 - 1][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[TILES_X / 2 - 1][TILES_Y / 2].occupied = true;
+  tilemap_[TILES_X / 2][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[TILES_X / 2][TILES_Y / 2].occupied = true;
 }
 
 Screen* GameScreen::update() {

@@ -8,8 +8,8 @@
 #include "sharp_display.h"
 #include "tetramino.h"
 
-#define TILES_X 10
-#define TILES_Y 10
+#define TILES_X 20
+#define TILES_Y 20
 
 struct Tile {
   bool occupied;
