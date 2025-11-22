@@ -45,6 +45,7 @@ void loop() {
   update_draw_frame();
   fps(1);
   uint32_t dt = micros() - ts;
+  // Serial.printf("%u\n", dt);
   if (dt < FRAME_BUDGET_US) {
     delayMicroseconds(FRAME_BUDGET_US - dt);
   }

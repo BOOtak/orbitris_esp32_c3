@@ -20,14 +20,6 @@ constexpr float dist_max = 1.496E11;
 constexpr float dist_min = 3.5E8;
 constexpr float d_dist = dist_max - dist_min;
 
-// Tilemap location and dimensions
-constexpr int centerX = LCD_WIDTH / 2;
-constexpr int centerY = LCD_HEIGHT / 2;
-constexpr int tileMapPosX = (LCD_WIDTH - TILES_X * TILE_W) / 2;
-constexpr int tileMapPosY = (LCD_HEIGHT - TILES_Y * TILE_H) / 2;
-constexpr int tileMapWidth = TILES_X * TILE_W;
-constexpr int tileMapHeight = TILES_Y * TILE_H;
-constexpr Rectangle tileMapRect = { tileMapPosX, tileMapPosY, tileMapWidth, tileMapHeight };
 
 GameScreen::GameScreen()
   : Screen() {}

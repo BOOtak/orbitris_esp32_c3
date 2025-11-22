@@ -1,6 +1,7 @@
 #pragma once
 
 #include "game_utils.h"
+#include "tetramino.h"
 
 constexpr auto TILES_X = 20;
 constexpr auto TILES_Y = 20;

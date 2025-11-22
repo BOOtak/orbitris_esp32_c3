@@ -34,4 +34,4 @@ extern Tetramino* Blocks[];
 
 Tetramino* get_random_block();
 
-void draw_tetramino(ActiveTetramino tetramino);
+void draw_tetramino(const ActiveTetramino& tetramino);

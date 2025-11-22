@@ -150,7 +150,7 @@ Tetramino* get_random_block() {
   return Blocks[get_random_value(0, ARR_SIZE(Blocks) - 1)];
 }
 
-void draw_tetramino(ActiveTetramino tetramino) {
+void draw_tetramino(const ActiveTetramino& tetramino) {
   if (tetramino.block == nullptr) {
     return;
   }
