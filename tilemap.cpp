@@ -1,5 +1,7 @@
 #include "tilemap.h"
 
+#include <Arduino.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -22,12 +24,28 @@ Tilemap::Tilemap() {
 }
 
 void Tilemap::init() {
-  std::memset(tilemap_, 0, sizeof(tilemap_));
+  game_points = 0;
 
+  std::memset(tilemap_, 0, sizeof(tilemap_));
   tilemap_[TILES_X / 2 - 1][TILES_Y / 2 - 1].occupied = true;
   tilemap_[TILES_X / 2 - 1][TILES_Y / 2].occupied = true;
   tilemap_[TILES_X / 2][TILES_Y / 2 - 1].occupied = true;
   tilemap_[TILES_X / 2][TILES_Y / 2].occupied = true;
+  tilemap_[TILES_X / 2 - 2][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[TILES_X / 2 - 2][TILES_Y / 2].occupied = true;
+  tilemap_[TILES_X / 2 - 3][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[TILES_X / 2 - 3][TILES_Y / 2].occupied = true;
+  tilemap_[TILES_X / 2 + 1][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[TILES_X / 2 + 1][TILES_Y / 2].occupied = true;
+  tilemap_[TILES_X / 2 + 2][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[TILES_X / 2 + 2][TILES_Y / 2].occupied = true;
+  tilemap_[TILES_X / 2 + 3][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[TILES_X / 2 + 3][TILES_Y / 2].occupied = true;
+
+
+  tile_delete_info_ = {};
+
+  delete_progress_ = 0.0f;
 }
 
 void Tilemap::draw() {
@@ -106,8 +124,80 @@ void Tilemap::place_tetramino(const ActiveTetramino& block) {
     tilemap_[coords[i][0]][coords[i][1]].occupied = true;
   }
 
-  // CheckRows();
+  check_rows();
   // CheckTilesOOB();
+}
+
+void Tilemap::check_rows() {
+  int hits = 0;
+
+  constexpr auto row_start = (TILES_Y - ROW_LENGTH) / 2;
+  for (size_t i = 0; i < TILES_X; i++) {
+    bool hit = true;
+    for (size_t j = row_start; j < row_start + ROW_LENGTH; j++) {
+      if (is_blank(tilemap_[i][j])) {
+        hit = false;
+      }
+    }
+
+    if (hit) {
+      hits++;
+      Serial.printf("Filled by Y at x = %lu\n", i);
+      tile_delete_info_.columns[i] = true;
+      for (size_t j1 = 0; j1 < TILES_Y; j1++) {
+        if (!is_blank(tilemap_[i][j1])) {
+          tilemap_[i][j1].flags = TileFlags::TO_DELETE;
+        }
+      }
+    }
+  }
+
+  constexpr auto col_start = (TILES_X - ROW_LENGTH) / 2;
+  for (size_t j = 0; j < TILES_Y; j++) {
+    bool hit = true;
+    for (size_t i = col_start; i < col_start + ROW_LENGTH; i++) {
+      if (is_blank(tilemap_[i][j])) {
+        hit = false;
+      }
+    }
+
+    if (hit) {
+      hits++;
+      Serial.printf("Filled by X at y = %lu\n", j);
+      tile_delete_info_.rows[j] = true;
+      for (size_t i1 = 0; i1 < TILES_X; i1++) {
+        if (!is_blank(tilemap_[i1][j])) {
+          tilemap_[i1][j].flags = TileFlags::TO_DELETE;
+        }
+      }
+    }
+  }
+
+  if (hits > 0) {
+    delete_progress_ = TILE_W;
+  }
+
+  switch (hits) {
+    case 1:
+      game_points += 40;
+      break;
+    case 2:
+      game_points += 100;
+      break;
+    case 3:
+      game_points += 300;
+      break;
+    case 4:
+      game_points += 1200;
+      break;
+    default:
+      if (hits > 4) {
+        game_points += 2400;
+      }
+      break;
+  }
+
+  Serial.printf("Game points: %d\n", game_points);
 }
 
 void Tilemap::get_tetramino_tilemap_pos_corner(const ActiveTetramino& block, int* x, int* y) {
