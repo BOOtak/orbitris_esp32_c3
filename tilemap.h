@@ -9,6 +9,7 @@ constexpr auto ROW_LENGTH = 8;
 constexpr auto DEATH_LENGTH = 12;
 
 enum class TileFlags {
+  NONE = 0,
   TO_DELETE,
   OOB
 };
@@ -21,6 +22,8 @@ struct Tile {
 struct TileDeleteInfo {
   bool rows[TILES_Y];
   bool columns[TILES_X];
+  float draw_size;
+  bool should_delete;
 };
 
 class Tilemap {
@@ -31,6 +34,8 @@ public:
 
   void init();
 
+  void update();
+
   void draw();
 
   Rectangle intersect_tiles(const ActiveTetramino& block);
@@ -40,7 +45,6 @@ public:
 private:
   Tile tilemap_[TILES_Y][TILES_X]{};
   TileDeleteInfo tile_delete_info_{};
-  float delete_progress_{};
 
   bool is_blank(const Tile& tile);
 
@@ -49,4 +53,6 @@ private:
   void get_tetramino_tilemap_pos_corner(const ActiveTetramino& block, int* x, int* y);
 
   void get_tetramino_tilemap_pos(const ActiveTetramino& block, int (*coords)[2]);
+
+  void delete_tiles_for_real();
 };

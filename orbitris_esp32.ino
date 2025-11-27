@@ -34,7 +34,7 @@ float fps(int seconds) {
     framesPerSecond = ((float)frameCount) / seconds;
     frameCount = 0;
     lastMillis = currentMillis;
-    Serial.printf("%04.3f\n", framesPerSecond);
+    // Serial.printf("%04.3f\n", framesPerSecond);
   }
   return framesPerSecond;
 }

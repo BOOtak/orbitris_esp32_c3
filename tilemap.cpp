@@ -18,6 +18,8 @@ constexpr int tileMapWidth = TILES_X * TILE_W;
 constexpr int tileMapHeight = TILES_Y * TILE_H;
 constexpr Rectangle tileMapRect = { tileMapPosX, tileMapPosY, tileMapWidth, tileMapHeight };
 
+// Update logic constants
+constexpr float deleteProgressSpeed = 0.5f;
 
 Tilemap::Tilemap() {
   init();
@@ -27,25 +29,36 @@ void Tilemap::init() {
   game_points = 0;
 
   std::memset(tilemap_, 0, sizeof(tilemap_));
-  tilemap_[TILES_X / 2 - 1][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[TILES_X / 2 - 1][TILES_Y / 2].occupied = true;
-  tilemap_[TILES_X / 2][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[TILES_X / 2][TILES_Y / 2].occupied = true;
-  tilemap_[TILES_X / 2 - 2][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[TILES_X / 2 - 2][TILES_Y / 2].occupied = true;
-  tilemap_[TILES_X / 2 - 3][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[TILES_X / 2 - 3][TILES_Y / 2].occupied = true;
-  tilemap_[TILES_X / 2 + 1][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[TILES_X / 2 + 1][TILES_Y / 2].occupied = true;
-  tilemap_[TILES_X / 2 + 2][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[TILES_X / 2 + 2][TILES_Y / 2].occupied = true;
-  tilemap_[TILES_X / 2 + 3][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[TILES_X / 2 + 3][TILES_Y / 2].occupied = true;
+  tilemap_[6][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[6][TILES_Y / 2].occupied = true;
+  tilemap_[7][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[7][TILES_Y / 2].occupied = true;
+  tilemap_[8][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[8][TILES_Y / 2].occupied = true;
+  tilemap_[9][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[9][TILES_Y / 2].occupied = true;
+  tilemap_[10][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[10][TILES_Y / 2].occupied = true;
+  tilemap_[11][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[11][TILES_Y / 2].occupied = true;
+  tilemap_[12][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[12][TILES_Y / 2].occupied = true;
 
 
   tile_delete_info_ = {};
+}
 
-  delete_progress_ = 0.0f;
+void Tilemap::update() {
+  if (tile_delete_info_.draw_size > 0) {
+    tile_delete_info_.draw_size -= deleteProgressSpeed;
+  } else {
+    tile_delete_info_.should_delete = true;
+  }
+
+  if (tile_delete_info_.should_delete) {
+    delete_tiles_for_real();
+    tile_delete_info_.should_delete = false;
+  }
 }
 
 void Tilemap::draw() {
@@ -55,9 +68,14 @@ void Tilemap::draw() {
         continue;
       }
 
-      int posX = (i - TILES_X / 2) * TILE_W + LCD_WIDTH / 2;
-      int posY = (j - TILES_Y / 2) * TILE_H + LCD_HEIGHT / 2;
-      draw_rectangle_lines(posX, posY, TILE_W, TILE_H, 0);
+      size_t size = TILE_W;
+      if (tilemap_[i][j].flags == TileFlags::TO_DELETE) {
+        size = max((size_t)0, (size_t)tile_delete_info_.draw_size);
+      }
+
+      int posX = (i - TILES_X / 2) * TILE_W + centerX + (TILE_W - size) / 2;
+      int posY = (j - TILES_Y / 2) * TILE_H + centerY + (TILE_H - size) / 2;
+      draw_rectangle_lines(posX, posY, size, size, 0);
     }
   }
 }
@@ -137,6 +155,7 @@ void Tilemap::check_rows() {
     for (size_t j = row_start; j < row_start + ROW_LENGTH; j++) {
       if (is_blank(tilemap_[i][j])) {
         hit = false;
+        break;
       }
     }
 
@@ -158,6 +177,7 @@ void Tilemap::check_rows() {
     for (size_t i = col_start; i < col_start + ROW_LENGTH; i++) {
       if (is_blank(tilemap_[i][j])) {
         hit = false;
+        break;
       }
     }
 
@@ -174,7 +194,7 @@ void Tilemap::check_rows() {
   }
 
   if (hits > 0) {
-    delete_progress_ = TILE_W;
+    tile_delete_info_.draw_size = TILE_W;
   }
 
   switch (hits) {
@@ -229,6 +249,76 @@ void Tilemap::get_tetramino_tilemap_pos(const ActiveTetramino& block, int (*coor
       coords[idx][0] = ix + x;
       coords[idx][1] = iy + y;
       idx++;
+    }
+  }
+}
+
+void Tilemap::delete_tiles_for_real() {
+  for (size_t i = 0; i < TILES_X; i++) {
+    if (tile_delete_info_.columns[i]) {
+      size_t di = 1, max_i = TILES_X;
+      if (i < TILES_X / 2) {
+        Serial.printf("Move right\n");
+        di = -1;
+        max_i = 0;
+      } else {
+        Serial.printf("Move left\n");
+      }
+
+      for (size_t i1 = i; i1 != max_i; i1 = i1 + di) {
+        if ((di > 0 && i1 == TILES_X - 1) || (di < 0 && i1 == 0)) {
+          tile_delete_info_.columns[i1] = false;
+        } else {
+          tile_delete_info_.columns[i1] = tile_delete_info_.columns[i1 + di];
+        }
+
+        for (size_t j = 0; j < TILES_Y; j++) {
+          if ((di > 0 && i1 == TILES_X - 1) || (di < 0 && i1 == 0)) {
+            tilemap_[i1][j] = {};
+          } else {
+            tilemap_[i1][j] = tilemap_[i1 + di][j];
+          }
+        }
+      }
+
+      // check same column again
+      if (di > 0) {
+        i = i - 1;
+      }
+    }
+  }
+
+  for (size_t j = 0; j < TILES_Y; j++) {
+    if (tile_delete_info_.rows[j]) {
+      size_t dj = 1, max_j = TILES_Y;
+      if (j < TILES_Y / 2) {
+        Serial.printf("Move down\n");
+        dj = -1;
+        max_j = 0;
+      } else {
+        Serial.printf("Move up\n");
+      }
+
+      for (size_t j1 = j; j1 != max_j; j1 = j1 + dj) {
+        if ((dj > 0 && j1 == TILES_Y - 1) || (dj < 0 && j1 == 0)) {
+          tile_delete_info_.rows[j1] = false;
+        } else {
+          tile_delete_info_.rows[j1] = tile_delete_info_.rows[j1 + dj];
+        }
+
+        for (size_t i = 0; i < TILES_X; i++) {
+          if ((dj > 0 && j1 == TILES_Y - 1) || (dj < 0 && j1 == 0)) {
+            tilemap_[i][j1] = {};
+          } else {
+            tilemap_[i][j1] = tilemap_[i][j1 + dj];
+          }
+        }
+      }
+
+      // check same row again
+      if (dj > 0) {
+        j = j - 1;
+      }
     }
   }
 }

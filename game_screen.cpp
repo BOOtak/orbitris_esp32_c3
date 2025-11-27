@@ -36,6 +36,8 @@ void GameScreen::init() {
 }
 
 Screen* GameScreen::update() {
+  tilemap_.update();
+
   Rectangle collision{};
   int sim_runs = get_resolution(planet_state_);
   for (int iter = 0; iter < sim_runs; iter++) {
