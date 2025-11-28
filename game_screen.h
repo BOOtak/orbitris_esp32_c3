@@ -32,4 +32,5 @@ private:
 
   void reset_planet_state();
   void generate_next_tetramino();
+  void draw_trajectory();
 };

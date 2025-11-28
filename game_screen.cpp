@@ -7,6 +7,8 @@
 #include "draw.h"
 #include "input.h"
 
+#include <array>
+
 // #include <Arduino.h>
 
 constexpr float dist_scale = 6.5E8;
@@ -20,6 +22,11 @@ constexpr float dist_max = 1.496E11;
 constexpr float dist_min = 3.5E8;
 constexpr float d_dist = dist_max - dist_min;
 
+constexpr auto trajectory_size = 50;
+
+const uint8_t patterns[] = { 0x00, 0x11, 0x24, 0x55, 0xd8, 0xee, 0xf0, 0xf8 };
+const uint8_t pattern_sizes[] = { 8, 8, 6, 8, 6, 8, 5, 6 };
+constexpr auto patterns_count = std::size(patterns);
 
 GameScreen::GameScreen()
   : Screen() {}
@@ -82,6 +89,7 @@ Screen* GameScreen::update() {
 void GameScreen::draw() {
   lcd_fill_buffer(1);
   draw_tetramino(active_tetramino_);
+  draw_trajectory();
   tilemap_.draw();
 }
 
@@ -112,4 +120,22 @@ void GameScreen::generate_next_tetramino() {
 
   next_tetramino_.block = get_random_block();
   active_tetramino_.rot_index = 0;
+}
+
+void GameScreen::draw_trajectory() {
+  PlanetState current_pos = planet_state_;
+  Vector2 start_pos = state_to_coords(current_pos, dist_scale, star_pos_);
+
+  int pattern_state = 0;
+  for (int i = 0; i < trajectory_size; i++) {
+    int resolution = get_resolution(current_pos);
+    for (int j = 0; j < resolution; j++) {
+      update_planet_state(current_pos, delta_time_ / resolution, star_mass);
+    }
+    Vector2 end_pos = state_to_coords(current_pos, dist_scale, star_pos_);
+    size_t pattern_index = (size_t)remap(i, 0, trajectory_size, 0, patterns_count - 1);
+    pattern_state = draw_line_pattern(start_pos.x, start_pos.y, end_pos.x, end_pos.y,
+                                      pattern_state, pattern_sizes[pattern_index], patterns[pattern_index]);
+    start_pos = end_pos;
+  }
 }

@@ -12,9 +12,9 @@ struct PlanetState {
   SpVector2 angle;
 };
 
-float distance_acceleration(PlanetState state, float star_mass);
+float distance_acceleration(const PlanetState& state, float star_mass);
 
-float angle_acceleratioin(PlanetState state);
+float angle_acceleratioin(const PlanetState& state);
 
 float new_value(float current_value, float delta_time, float derivative);
 

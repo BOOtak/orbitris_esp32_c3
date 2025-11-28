@@ -2,12 +2,13 @@
 
 #include <cmath>
 
-float distance_acceleration(PlanetState state, float star_mass) {
-  float gravity_const = 6.67408E-11;
+constexpr float gravity_const = 6.67408E-11;
+
+float distance_acceleration(const PlanetState& state, float star_mass) {
   return state.distance.value * pow(state.angle.speed, 2) - (gravity_const * star_mass) / pow(state.distance.value, 2);
 }
 
-float angle_acceleratioin(PlanetState state) {
+float angle_acceleratioin(const PlanetState& state) {
   return -2.0f * state.distance.speed * state.angle.speed / state.distance.value;
 }
 
