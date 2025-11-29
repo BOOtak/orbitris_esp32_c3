@@ -1,13 +1,12 @@
 #include "tilemap.h"
 
-#include <Arduino.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 
+#include "const.h"
 #include "draw.h"
-#include "sharp_display.h"
+#include "trace.h"
 
 // Tilemap location and dimensions
 constexpr int centerX = LCD_WIDTH / 2;
@@ -70,7 +69,7 @@ void Tilemap::draw() {
 
       size_t size = TILE_W;
       if (tilemap_[i][j].flags == TileFlags::TO_DELETE) {
-        size = max((size_t)0, (size_t)tile_delete_info_.draw_size);
+        size = std::max((size_t)0, (size_t)tile_delete_info_.draw_size);
       }
 
       int posX = (i - TILES_X / 2) * TILE_W + centerX + (TILE_W - size) / 2;
@@ -106,10 +105,10 @@ Rectangle Tilemap::intersect_tiles(const ActiveTetramino& block) {
         tileRect.y = posY;
 
         if (check_collision_recs(tileRect, blockRect)) {
-          // Serial.printf("Hit tile %lu %lu\n", i, j);
+          // trace("Hit tile %lu %lu\n", i, j);
           int rot_index = block.rot_index;
           uint8_t(*data)[4] = block.block->data[rot_index];
-          Rectangle targetRect = { .x = 0, .y = 0, .width = TILE_W, .height = TILE_H };
+          Rectangle targetRect = { 0, 0, TILE_W, TILE_H };
           for (size_t y = 0; y < BLOCK_SIZE; y++) {
             for (size_t x = 0; x < BLOCK_SIZE; x++) {
               if (data[y][x] == 0) {
@@ -120,7 +119,7 @@ Rectangle Tilemap::intersect_tiles(const ActiveTetramino& block) {
               targetRect.y = blockRect.y + y * TILE_H;
 
               if (check_collision_recs(tileRect, targetRect)) {
-                // Serial.printf("Collision!\n");
+                // trace("Collision!\n");
                 return get_collision_rec(tileRect, targetRect);
               }
             }
@@ -137,7 +136,7 @@ void Tilemap::place_tetramino(const ActiveTetramino& block) {
   int coords[BLOCK_SIZE][2]{};
   get_tetramino_tilemap_pos(block, coords);
   for (size_t i = 0; i < BLOCK_SIZE; i++) {
-    // Serial.printf("Add %d %d\n", coords[i][0], coords[i][1]);
+    // trace("Add %d %d\n", coords[i][0], coords[i][1]);
     // tilemap[coords[i][0]][coords[i][1]] = block.block->color;
     tilemap_[coords[i][0]][coords[i][1]].occupied = true;
   }
@@ -161,7 +160,7 @@ void Tilemap::check_rows() {
 
     if (hit) {
       hits++;
-      Serial.printf("Filled by Y at x = %lu\n", i);
+      trace("Filled by Y at x = %lu\n", i);
       tile_delete_info_.columns[i] = true;
       for (size_t j1 = 0; j1 < TILES_Y; j1++) {
         if (!is_blank(tilemap_[i][j1])) {
@@ -183,7 +182,7 @@ void Tilemap::check_rows() {
 
     if (hit) {
       hits++;
-      Serial.printf("Filled by X at y = %lu\n", j);
+      trace("Filled by X at y = %lu\n", j);
       tile_delete_info_.rows[j] = true;
       for (size_t i1 = 0; i1 < TILES_X; i1++) {
         if (!is_blank(tilemap_[i1][j])) {
@@ -217,7 +216,7 @@ void Tilemap::check_rows() {
       break;
   }
 
-  Serial.printf("Game points: %d\n", game_points);
+  trace("Game points: %d\n", game_points);
 }
 
 void Tilemap::get_tetramino_tilemap_pos_corner(const ActiveTetramino& block, int* x, int* y) {
@@ -258,11 +257,11 @@ void Tilemap::delete_tiles_for_real() {
     if (tile_delete_info_.columns[i]) {
       size_t di = 1, max_i = TILES_X;
       if (i < TILES_X / 2) {
-        Serial.printf("Move right\n");
+        trace("Move right\n");
         di = -1;
         max_i = 0;
       } else {
-        Serial.printf("Move left\n");
+        trace("Move left\n");
       }
 
       for (size_t i1 = i; i1 != max_i; i1 = i1 + di) {
@@ -292,11 +291,11 @@ void Tilemap::delete_tiles_for_real() {
     if (tile_delete_info_.rows[j]) {
       size_t dj = 1, max_j = TILES_Y;
       if (j < TILES_Y / 2) {
-        Serial.printf("Move down\n");
+        trace("Move down\n");
         dj = -1;
         max_j = 0;
       } else {
-        Serial.printf("Move up\n");
+        trace("Move up\n");
       }
 
       for (size_t j1 = j; j1 != max_j; j1 = j1 + dj) {

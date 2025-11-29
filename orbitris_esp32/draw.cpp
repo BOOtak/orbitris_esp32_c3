@@ -2,7 +2,13 @@
 
 #include <cstdlib>
 
-#include "sharp_display.h"
+extern void lcd_draw_pixel(int x, int y, int color);
+
+extern void lcd_fill_buffer(int color);
+
+void fill_scrfeen_buffer(int color) {
+  lcd_fill_buffer(color);
+}
 
 void draw_rectangle_lines(int posX, int posY, int width, int height, int color) {
   // Draw top horizontal line

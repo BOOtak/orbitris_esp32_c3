@@ -70,16 +70,16 @@ Screen* GameScreen::update() {
     active_tetramino_.pos = state_to_coords(planet_state_, dist_scale, star_pos_);
   }
 
-  if (is_key_down(KEY_UP)) {
+  if (is_key_down(ESP_KEY_UP)) {
     planet_state_.angle.speed += 1.0E-9;
   }
-  if (is_key_down(KEY_DOWN)) {
+  if (is_key_down(ESP_KEY_DOWN)) {
     planet_state_.angle.speed -= 1.0E-9;
   }
 
-  if (is_key_pressed(KEY_LEFT)) {
+  if (is_key_pressed(ESP_KEY_LEFT)) {
     active_tetramino_.rot_index = (active_tetramino_.rot_index + 3) % 4;  // same as -1 % 4
-  } else if (is_key_pressed(KEY_RIGHT)) {
+  } else if (is_key_pressed(ESP_KEY_RIGHT)) {
     active_tetramino_.rot_index = (active_tetramino_.rot_index + 1) % 4;
   }
 
@@ -87,7 +87,7 @@ Screen* GameScreen::update() {
 }
 
 void GameScreen::draw() {
-  lcd_fill_buffer(1);
+  fill_scrfeen_buffer(1);
   draw_tetramino(active_tetramino_);
   draw_trajectory();
   tilemap_.draw();

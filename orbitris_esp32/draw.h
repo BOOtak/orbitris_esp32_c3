@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+void fill_scrfeen_buffer(int color);
+
 void draw_rectangle_lines(int posX, int posY, int width, int height, int color);
 
 /**

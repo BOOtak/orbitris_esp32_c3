@@ -29,6 +29,7 @@ void update_planet_state(PlanetState& state, float dt, float star_mass) {
   state.distance.speed = new_value(state.distance.speed, dt, dist_acc);
   state.distance.value = new_value(state.distance.value, dt, state.distance.speed);
 
+
   float angle_acc = angle_acceleratioin(state);
   state.angle.speed = new_value(state.angle.speed, dt, angle_acc);
   state.angle.value = new_value(state.angle.value, dt, state.angle.speed);

@@ -2,7 +2,6 @@
 
 #include "game_screen.h"
 #include "screen.h"
-#include "sharp_display.h"
 
 Screen* current_screen = nullptr;
 
@@ -28,5 +27,4 @@ void init_game() {
 void update_draw_frame() {
   update_screen();
   current_screen->draw();
-  lcd_update();
 }

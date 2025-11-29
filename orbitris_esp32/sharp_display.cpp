@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <SPI.h>
 
+#include "const.h"
+
 #define BYTES_PER_LINE (LCD_WIDTH / 8)  // 50 bytes per line
 
 // Pin Definitions

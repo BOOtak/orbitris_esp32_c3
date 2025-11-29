@@ -2,10 +2,10 @@
 
 #include <cstdint>
 
+#include "const.h"
 #include "game_utils.h"
 #include "orbital.h"
 #include "screen.h"
-#include "sharp_display.h"
 #include "tetramino.h"
 #include "tilemap.h"
 

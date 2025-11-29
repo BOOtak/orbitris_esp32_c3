@@ -2,9 +2,6 @@
 
 #pragma once
 
-#define LCD_WIDTH 400
-#define LCD_HEIGHT 240
-
 void lcd_init();
 
 /**

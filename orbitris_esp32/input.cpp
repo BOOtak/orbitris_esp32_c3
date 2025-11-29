@@ -14,23 +14,23 @@ static bool btn_states_prev[IDX_MAX]{};
 static bool btn_states[IDX_MAX]{};
 
 void input_init() {
-  pinMode(KEY_UP, INPUT_PULLUP);
-  pinMode(KEY_DOWN, INPUT_PULLUP);
-  pinMode(KEY_LEFT, INPUT_PULLUP);
-  pinMode(KEY_RIGHT, INPUT_PULLUP);
-  pinMode(KEY_A, INPUT_PULLUP);
-  pinMode(KEY_B, INPUT_PULLUP);
+  pinMode(ESP_KEY_UP, INPUT_PULLUP);
+  pinMode(ESP_KEY_DOWN, INPUT_PULLUP);
+  pinMode(ESP_KEY_LEFT, INPUT_PULLUP);
+  pinMode(ESP_KEY_RIGHT, INPUT_PULLUP);
+  pinMode(ESP_KEY_A, INPUT_PULLUP);
+  pinMode(ESP_KEY_B, INPUT_PULLUP);
 }
 
 void input_update() {
   memcpy(btn_states_prev, btn_states, sizeof(btn_states));
 
-  btn_states[IDX_UP] = !digitalRead(KEY_UP);
-  btn_states[IDX_DOWN] = !digitalRead(KEY_DOWN);
-  btn_states[IDX_LEFT] = !digitalRead(KEY_LEFT);
-  btn_states[IDX_RIGHT] = !digitalRead(KEY_RIGHT);
-  btn_states[IDX_A] = !digitalRead(KEY_A);
-  btn_states[IDX_B] = !digitalRead(KEY_B);
+  btn_states[IDX_UP] = !digitalRead(ESP_KEY_UP);
+  btn_states[IDX_DOWN] = !digitalRead(ESP_KEY_DOWN);
+  btn_states[IDX_LEFT] = !digitalRead(ESP_KEY_LEFT);
+  btn_states[IDX_RIGHT] = !digitalRead(ESP_KEY_RIGHT);
+  btn_states[IDX_A] = !digitalRead(ESP_KEY_A);
+  btn_states[IDX_B] = !digitalRead(ESP_KEY_B);
 }
 
 bool is_key_down(int key) {
@@ -40,22 +40,22 @@ bool is_key_down(int key) {
 bool is_key_pressed(int key) {
   int idx = 0;
   switch (key) {
-    case KEY_UP:
+    case ESP_KEY_UP:
       idx = IDX_UP;
       break;
-    case KEY_DOWN:
+    case ESP_KEY_DOWN:
       idx = IDX_DOWN;
       break;
-    case KEY_LEFT:
+    case ESP_KEY_LEFT:
       idx = IDX_LEFT;
       break;
-    case KEY_RIGHT:
+    case ESP_KEY_RIGHT:
       idx = IDX_RIGHT;
       break;
-    case KEY_A:
+    case ESP_KEY_A:
       idx = IDX_A;
       break;
-    case KEY_B:
+    case ESP_KEY_B:
       idx = IDX_B;
       break;
   }
