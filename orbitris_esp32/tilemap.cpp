@@ -28,20 +28,10 @@ void Tilemap::init() {
   game_points = 0;
 
   std::memset(tilemap_, 0, sizeof(tilemap_));
-  tilemap_[6][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[6][TILES_Y / 2].occupied = true;
-  tilemap_[7][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[7][TILES_Y / 2].occupied = true;
-  tilemap_[8][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[8][TILES_Y / 2].occupied = true;
-  tilemap_[9][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[9][TILES_Y / 2].occupied = true;
-  tilemap_[10][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[10][TILES_Y / 2].occupied = true;
-  tilemap_[11][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[11][TILES_Y / 2].occupied = true;
-  tilemap_[12][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[12][TILES_Y / 2].occupied = true;
+  tilemap_[TILES_X / 2 - 1][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[TILES_X / 2 - 1][TILES_Y / 2].occupied = true;
+  tilemap_[TILES_X / 2][TILES_Y / 2 - 1].occupied = true;
+  tilemap_[TILES_X / 2][TILES_Y / 2].occupied = true;
 
 
   tile_delete_info_ = {};
@@ -107,7 +97,7 @@ Rectangle Tilemap::intersect_tiles(const ActiveTetramino& block) {
         if (check_collision_recs(tileRect, blockRect)) {
           // trace("Hit tile %lu %lu\n", i, j);
           int rot_index = block.rot_index;
-          uint8_t(*data)[4] = block.block->data[rot_index];
+          uint8_t (*data)[4] = block.block->data[rot_index];
           Rectangle targetRect = { 0, 0, TILE_W, TILE_H };
           for (size_t y = 0; y < BLOCK_SIZE; y++) {
             for (size_t x = 0; x < BLOCK_SIZE; x++) {
@@ -238,7 +228,7 @@ void Tilemap::get_tetramino_tilemap_pos(const ActiveTetramino& block, int (*coor
   get_tetramino_tilemap_pos_corner(block, &ix, &iy);
 
   // TODO: Check bounds!
-  uint8_t(*data)[BLOCK_SIZE] = block.block->data[block.rot_index];
+  uint8_t (*data)[BLOCK_SIZE] = block.block->data[block.rot_index];
   for (size_t y = 0; y < BLOCK_SIZE; y++) {
     for (size_t x = 0; x < BLOCK_SIZE; x++) {
       if (data[y][x] == 0) {

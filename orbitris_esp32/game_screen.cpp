@@ -8,11 +8,18 @@
 #include "input.h"
 
 #include <array>
+#include <cmath>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+#include "trace.h"
+
 
 // #include <Arduino.h>
 
-constexpr float dist_scale = 6.5E8;
-constexpr float star_mass = 1.98855E30;
+constexpr float DIST_SCALE = 6.5E8;
+constexpr float STAR_MASS = 1.98855E30;
 
 constexpr int resolution_min = 1;  // times per frame
 constexpr int resolution_max = 10;
@@ -48,8 +55,8 @@ Screen* GameScreen::update() {
   Rectangle collision{};
   int sim_runs = get_resolution(planet_state_);
   for (int iter = 0; iter < sim_runs; iter++) {
-    update_planet_state(planet_state_, delta_time_ / sim_runs, star_mass);
-    active_tetramino_.pos = state_to_coords(planet_state_, dist_scale, star_pos_);
+    update_planet_state(planet_state_, delta_time_ / sim_runs, STAR_MASS);
+    active_tetramino_.pos = state_to_coords(planet_state_, DIST_SCALE, star_pos_);
 
     collision = tilemap_.intersect_tiles(active_tetramino_);
 
@@ -67,7 +74,7 @@ Screen* GameScreen::update() {
     //   // sliding_tetramino.progress = 1.1;  // to check where to slide it first
     reset_planet_state();
     generate_next_tetramino();
-    active_tetramino_.pos = state_to_coords(planet_state_, dist_scale, star_pos_);
+    active_tetramino_.pos = state_to_coords(planet_state_, DIST_SCALE, star_pos_);
   }
 
   if (is_key_down(ESP_KEY_UP)) {
@@ -123,19 +130,48 @@ void GameScreen::generate_next_tetramino() {
 }
 
 void GameScreen::draw_trajectory() {
-  PlanetState current_pos = planet_state_;
-  Vector2 start_pos = state_to_coords(current_pos, dist_scale, star_pos_);
+  OrbitalElements elements = calc_orbital_elements(planet_state_, STAR_MASS);
+  if (elements.eccentricity >= 1.0f) {
+    // TODO: draw open orbit!
+    return;
+  }
+
+  // Calculate the step size for the true anomaly
+  const float d_nu = 2.0f * (float)M_PI / (float)trajectory_size;
+
+  Vector2 cur{};
+  Vector2 prev{};
 
   int pattern_state = 0;
-  for (int i = 0; i < trajectory_size; i++) {
-    int resolution = get_resolution(current_pos);
-    for (int j = 0; j < resolution; j++) {
-      update_planet_state(current_pos, delta_time_ / resolution, star_mass);
+  for (int i = 0; i <= trajectory_size; ++i) {
+    // Start drawing from the current planet position
+    const float nu = planet_state_.angle.value - elements.arg_periapsis + i * d_nu;
+
+    // Calculate Distance (r) using the Polar Equation of a Conic Section
+    // r(nu) = p / (1 + e * cos(nu))
+    float cos_nu = cosf(nu);
+    float r_distance = elements.semi_latus_rectum / (1.0f + elements.eccentricity * cos_nu);
+
+    // Calculate the Absolute Angle (phi)
+    // phi = omega + nu
+    const float phi = elements.arg_periapsis + nu;
+
+    // Convert Polar coordinates to Cartesian
+    float cos_phi = cosf(phi);
+    float sin_phi = sinf(phi);
+
+    // Scale the distance and offset center
+    float dist_to_scale = r_distance / DIST_SCALE;
+    cur.x = star_pos_.x + dist_to_scale * cos_phi;
+    cur.y = star_pos_.y + dist_to_scale * sin_phi;
+
+    // Draw the Line Segment
+    if (i > 0) {
+      size_t pattern_index = (size_t)remap(i, 0, trajectory_size, 0, patterns_count - 1);
+      pattern_state = draw_line_pattern((int)prev.x, (int)prev.y, (int)cur.x, (int)cur.y,
+                                        pattern_state, pattern_sizes[pattern_index], patterns[pattern_index]);
     }
-    Vector2 end_pos = state_to_coords(current_pos, dist_scale, star_pos_);
-    size_t pattern_index = (size_t)remap(i, 0, trajectory_size, 0, patterns_count - 1);
-    pattern_state = draw_line_pattern(start_pos.x, start_pos.y, end_pos.x, end_pos.y,
-                                      pattern_state, pattern_sizes[pattern_index], patterns[pattern_index]);
-    start_pos = end_pos;
+
+    prev = cur;
   }
 }
