@@ -1,15 +1,14 @@
 #include "game_screen.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cmath>
 
 #include "draw.h"
 #include "input.h"
+#include "table_math.h"
 #include "trace.h"
-
-#include <array>
-#include <cmath>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -233,7 +232,7 @@ void GameScreen::draw_trajectory() {
 
     // Calculate Distance (r) using the Polar Equation of a Conic Section
     // r(nu) = p / (1 + e * cos(nu))
-    float cos_nu = cosf(nu);
+    float cos_nu = approx_cos(nu);
     float r_distance = elements.semi_latus_rectum / (1.0f + elements.eccentricity * cos_nu);
 
     // Calculate the Absolute Angle (phi)
@@ -241,8 +240,8 @@ void GameScreen::draw_trajectory() {
     const float phi = elements.arg_periapsis + nu;
 
     // Convert Polar coordinates to Cartesian
-    float cos_phi = cosf(phi);
-    float sin_phi = sinf(phi);
+    float cos_phi = approx_cos(phi);
+    float sin_phi = approx_sin(phi);
 
     // Scale the distance and offset center
     float dist_to_scale = r_distance / DIST_SCALE;

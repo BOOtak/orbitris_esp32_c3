@@ -2,6 +2,7 @@
 
 #include "game_screen.h"
 #include "screen.h"
+#include "table_math.h"
 
 Screen* current_screen = nullptr;
 
@@ -19,6 +20,7 @@ void update_screen() {
 }
 
 void init_game() {
+  init_trig_tables();
   screens::game_screen = new GameScreen();
   current_screen = screens::game_screen;
   current_screen->init();

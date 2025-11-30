@@ -40,6 +40,8 @@ void loop() {
   uint32_t ts = micros();
   input_update();
   update_draw_frame();
+  // uint32_t dt1 = micros() - ts;
+  // Serial.printf("%u\n", dt1);
   lcd_update();
   fps(1);
   uint32_t dt = micros() - ts;

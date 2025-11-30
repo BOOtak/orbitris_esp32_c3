@@ -25,6 +25,7 @@ add_executable(${PROJECT_NAME}
     orbitris_esp32/game_utils.cpp
     orbitris_esp32/orbital.cpp
     orbitris_esp32/screen.cpp
+    orbitris_esp32/table_math.cpp
     orbitris_esp32/tetramino.cpp
     orbitris_esp32/tilemap.cpp
     )
