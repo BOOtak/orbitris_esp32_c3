@@ -76,3 +76,20 @@ int get_random_value(int min, int max) {
 
   return (rand() % (abs(max - min) + 1) + min);
 }
+
+Vector2 vector2_lerp(const Vector2& v1, const Vector2& v2, float amount) {
+  Vector2 result = {};
+
+  result.x = v1.x + amount * (v2.x - v1.x);
+  result.y = v1.y + amount * (v2.y - v1.y);
+
+  return result;
+}
+
+Vector2 vector2_add(const Vector2& v1, const Vector2& v2) {
+  return { v1.x + v2.x, v1.y + v2.y };
+}
+
+Vector2 vector2_scale(const Vector2& v, float scale) {
+  return { v.x * scale, v.y * scale };
+}

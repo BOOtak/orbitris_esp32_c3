@@ -32,5 +32,6 @@ private:
 
   void reset_planet_state();
   void generate_next_tetramino();
+  void update_sliding_tetramino(ActiveTetramino& block);
   void draw_trajectory();
 };

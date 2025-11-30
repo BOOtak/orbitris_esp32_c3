@@ -23,3 +23,9 @@ Rectangle get_collision_rec(const Rectangle& rec1, const Rectangle& rec2);
 
 // Get a random value between min and max (both included)
 int get_random_value(int min, int max);
+
+Vector2 vector2_lerp(const Vector2& v1, const Vector2& v2, float amount);
+
+Vector2 vector2_add(const Vector2& v1, const Vector2& v2);
+
+Vector2 vector2_scale(const Vector2& v, float scale);

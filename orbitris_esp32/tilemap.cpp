@@ -9,8 +9,6 @@
 #include "trace.h"
 
 // Tilemap location and dimensions
-constexpr int centerX = LCD_WIDTH / 2;
-constexpr int centerY = LCD_HEIGHT / 2;
 constexpr int tileMapPosX = (LCD_WIDTH - TILES_X * TILE_W) / 2;
 constexpr int tileMapPosY = (LCD_HEIGHT - TILES_Y * TILE_H) / 2;
 constexpr int tileMapWidth = TILES_X * TILE_W;
@@ -62,8 +60,8 @@ void Tilemap::draw() {
         size = std::max((size_t)0, (size_t)tile_delete_info_.draw_size);
       }
 
-      int posX = (i - TILES_X / 2) * TILE_W + centerX + (TILE_W - size) / 2;
-      int posY = (j - TILES_Y / 2) * TILE_H + centerY + (TILE_H - size) / 2;
+      int posX = (i - TILES_X / 2) * TILE_W + CENTER_X + (TILE_W - size) / 2;
+      int posY = (j - TILES_Y / 2) * TILE_H + CENTER_Y + (TILE_H - size) / 2;
       draw_rectangle_lines(posX, posY, size, size, 0);
     }
   }
@@ -89,8 +87,8 @@ Rectangle Tilemap::intersect_tiles(const ActiveTetramino& block) {
           continue;
         }
 
-        int posX = (i - TILES_X / 2) * TILE_W + centerX;
-        int posY = (j - TILES_Y / 2) * TILE_H + centerY;
+        int posX = (i - TILES_X / 2) * TILE_W + CENTER_X;
+        int posY = (j - TILES_Y / 2) * TILE_H + CENTER_Y;
         tileRect.x = posX;
         tileRect.y = posY;
 
@@ -127,12 +125,23 @@ void Tilemap::place_tetramino(const ActiveTetramino& block) {
   get_tetramino_tilemap_pos(block, coords);
   for (size_t i = 0; i < BLOCK_SIZE; i++) {
     // trace("Add %d %d\n", coords[i][0], coords[i][1]);
-    // tilemap[coords[i][0]][coords[i][1]] = block.block->color;
     tilemap_[coords[i][0]][coords[i][1]].occupied = true;
   }
 
   check_rows();
   // CheckTilesOOB();
+}
+
+bool Tilemap::can_move(const ActiveTetramino& block, int dx, int dy) const {
+  int coords[BLOCK_SIZE][2]{};
+  get_tetramino_tilemap_pos(block, coords);
+  for (size_t i = 0; i < BLOCK_SIZE; i++) {
+    if (!is_blank(tilemap_[coords[i][0] + dx][coords[i][1] + dy])) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 void Tilemap::check_rows() {
@@ -209,23 +218,30 @@ void Tilemap::check_rows() {
   trace("Game points: %d\n", game_points);
 }
 
-void Tilemap::get_tetramino_tilemap_pos_corner(const ActiveTetramino& block, int* x, int* y) {
+void Tilemap::get_tetramino_tilemap_pos_corner(const ActiveTetramino& block, int& x, int& y) const {
   size_t idx = 0;
   float deltaX = block.pos.x - block.block->center.x * TILE_W - tileMapPosX;
   float deltaY = block.pos.y - block.block->center.y * TILE_H - tileMapPosY;
   int ix = (int)round(deltaX / TILE_W);
   int iy = (int)round(deltaY / TILE_H);
 
-  *x = ix;
-  *y = iy;
+  x = ix;
+  y = iy;
 }
 
-void Tilemap::get_tetramino_tilemap_pos(const ActiveTetramino& block, int (*coords)[2] /* int[4][2] */) {
+Vector2 Tilemap::get_tile_pos(int ix, int iy) const {
+  Vector2 result{};
+  result.x = ix * TILE_W + CENTER_X - (TILE_W * TILES_X / 2);
+  result.y = iy * TILE_H + CENTER_Y - (TILE_H * TILES_Y / 2);
+  return result;
+}
+
+void Tilemap::get_tetramino_tilemap_pos(const ActiveTetramino& block, int (*coords)[2] /* int[4][2] */) const {
   size_t idx = 0;
   float deltaX = block.pos.x - block.block->center.x * TILE_W - tileMapPosX;
   float deltaY = block.pos.y - block.block->center.y * TILE_H - tileMapPosY;
   int ix = 0, iy = 0;
-  get_tetramino_tilemap_pos_corner(block, &ix, &iy);
+  get_tetramino_tilemap_pos_corner(block, ix, iy);
 
   // TODO: Check bounds!
   uint8_t (*data)[BLOCK_SIZE] = block.block->data[block.rot_index];
@@ -312,6 +328,6 @@ void Tilemap::delete_tiles_for_real() {
   }
 }
 
-bool Tilemap::is_blank(const Tile& tile) {
+bool Tilemap::is_blank(const Tile& tile) const {
   return !tile.occupied;
 }

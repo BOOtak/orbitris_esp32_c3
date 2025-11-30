@@ -6,6 +6,7 @@
 
 #include "draw.h"
 #include "input.h"
+#include "trace.h"
 
 #include <array>
 #include <cmath>
@@ -13,10 +14,6 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#include "trace.h"
-
-
-// #include <Arduino.h>
 
 constexpr float DIST_SCALE = 6.5E8f;
 constexpr float STAR_MASS = 1.98855E30f;
@@ -30,6 +27,9 @@ constexpr float dist_min = 3.5E8f;
 constexpr float d_dist = dist_max - dist_min;
 
 constexpr auto trajectory_size = 50;
+
+constexpr float PROGRESS_SPEED = 0.05f;
+constexpr float DIST_THRESHOLD = 0.0001f;
 
 const uint8_t patterns[] = { 0x00, 0x11, 0x24, 0x55, 0xd8, 0xee, 0xf0, 0xf8 };
 const uint8_t pattern_sizes[] = { 8, 8, 6, 8, 6, 8, 5, 6 };
@@ -66,16 +66,17 @@ Screen* GameScreen::update() {
   }
 
   if (collision.width > 0 && collision.height > 0) {
-    tilemap_.place_tetramino(active_tetramino_);
-    //   // sliding_tetramino.block = active_tetramino.block;
-    //   // sliding_tetramino.pos.x = active_tetramino.pos.x;
-    //   // sliding_tetramino.pos.y = active_tetramino.pos.y;
-    //   // sliding_tetramino.rot_index = active_tetramino.rot_index;
-    //   // sliding_tetramino.progress = 1.1;  // to check where to slide it first
+    sliding_tetramino_.block = active_tetramino_.block;
+    sliding_tetramino_.pos.x = active_tetramino_.pos.x;
+    sliding_tetramino_.pos.y = active_tetramino_.pos.y;
+    sliding_tetramino_.rot_index = active_tetramino_.rot_index;
+    sliding_tetramino_.progress = 1.1f;  // to check where to slide it first
     reset_planet_state();
     generate_next_tetramino();
     active_tetramino_.pos = state_to_coords(planet_state_, DIST_SCALE, star_pos_);
   }
+
+  update_sliding_tetramino(sliding_tetramino_);
 
   if (is_key_down(ESP_KEY_UP)) {
     planet_state_.angle.speed += 1.0E-9f;
@@ -96,6 +97,7 @@ Screen* GameScreen::update() {
 void GameScreen::draw() {
   fill_scrfeen_buffer(1);
   draw_tetramino(active_tetramino_);
+  draw_tetramino(sliding_tetramino_);
   draw_trajectory();
   tilemap_.draw();
 }
@@ -127,6 +129,83 @@ void GameScreen::generate_next_tetramino() {
 
   next_tetramino_.block = get_random_block();
   active_tetramino_.rot_index = 0;
+}
+
+void GameScreen::update_sliding_tetramino(ActiveTetramino& block) {
+  if (block.block == NULL) {
+    return;
+  }
+
+  if (block.progress < 1) {
+    block.progress += PROGRESS_SPEED;
+    block.pos = vector2_lerp(block.oldPos, block.targetPos, block.progress);
+    trace("Sliding to (%.1f; %.1f)\n", block.pos.x, block.pos.y);
+    return;
+  }
+
+  trace("Arrived at (%.1f %.1f), check next\n", block.targetPos.x, block.targetPos.y);
+
+  int threshold = TILE_W;
+  float dx = CENTER_X - block.pos.x;
+  float dy = CENTER_Y - block.pos.y;
+
+  int dirX = dx > 0 ? 1 : -1;
+  int dirY = dy > 0 ? 1 : -1;
+
+  if (abs(dx) < threshold) {
+    dirX = 0;
+  }
+
+  if (abs(dy) < threshold) {
+    dirY = 0;
+  }
+
+  if (dirX == 0 && dirY == 0) {
+    trace("We're here!\n");
+    tilemap_.place_tetramino(block);
+    block.block = NULL;
+    return;
+  }
+
+  // check larger distance first
+  int move = 0;
+  if (abs(dx) > abs(dy)) {
+    if (dirX != 0 && tilemap_.can_move(block, dirX, 0)) {
+      printf("Can move %d on x\n", dirX);
+      dirY = 0;
+      move = 1;
+    } else if (dirY != 0 && tilemap_.can_move(block, 0, dirY)) {
+      printf("Can move %d on y\n", dirY);
+      dirX = 0;
+      move = 1;
+    }
+  } else {
+    if (dirY != 0 && tilemap_.can_move(block, 0, dirY)) {
+      printf("Can move %d on y\n", dirY);
+      dirX = 0;
+      move = 1;
+    } else if (dirX != 0 && tilemap_.can_move(block, dirX, 0)) {
+      printf("Can move %d on x\n", dirX);
+      dirY = 0;
+      move = 1;
+    }
+  }
+
+  if (!move) {
+    trace("Can't move further!\n");
+    tilemap_.place_tetramino(block);
+    block.block = NULL;
+    return;
+  }
+
+  int ix = 0, iy = 0;
+  tilemap_.get_tetramino_tilemap_pos_corner(block, ix, iy);
+  Vector2 newCornerPos = tilemap_.get_tile_pos(ix + dirX, iy + dirY);
+  Vector2 newCenterPos = vector2_add(newCornerPos, vector2_scale(block.block->center, TILE_W));
+  block.targetPos = newCenterPos;
+  trace("Move to (%f %f)\n", newCenterPos.x, newCenterPos.y);
+  block.oldPos = block.pos;
+  block.progress = 0.0f;
 }
 
 void GameScreen::draw_trajectory() {
