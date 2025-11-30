@@ -34,4 +34,5 @@ private:
   void generate_next_tetramino();
   void update_sliding_tetramino(ActiveTetramino& block);
   void draw_trajectory();
+  void draw_boundaries();
 };

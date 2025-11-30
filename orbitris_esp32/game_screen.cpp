@@ -99,6 +99,7 @@ void GameScreen::draw() {
   draw_tetramino(active_tetramino_);
   draw_tetramino(sliding_tetramino_);
   draw_trajectory();
+  draw_boundaries();
   tilemap_.draw();
 }
 
@@ -253,4 +254,27 @@ void GameScreen::draw_trajectory() {
 
     prev = cur;
   }
+}
+
+void GameScreen::draw_boundaries() {
+  // draw tetirs boundaries
+  Rectangle rect{
+    0.0f, 0.0f,
+    ROW_LENGTH * TILE_W,
+    ROW_LENGTH * TILE_H
+  };
+
+  rect.x = CENTER_X - rect.width / 2;
+  rect.y = CENTER_Y - rect.height / 2;
+
+  constexpr uint8_t pattern_50_percent = 0xAA;
+  draw_rectangle_lines_pattern(rect, 8, pattern_50_percent);
+
+  rect.width = DEATH_LENGTH * TILE_W;
+  rect.height = DEATH_LENGTH * TILE_H;
+  rect.x = CENTER_X - rect.width / 2;
+  rect.y = CENTER_Y - rect.height / 2;
+
+  constexpr uint8_t pattern_66_percent = 0xd8;
+  draw_rectangle_lines_pattern(rect, 6, pattern_66_percent);
 }
