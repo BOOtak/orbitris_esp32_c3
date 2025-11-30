@@ -96,6 +96,10 @@ Screen* GameScreen::update() {
 
 void GameScreen::draw() {
   fill_scrfeen_buffer(1);
+  constexpr auto buf_size = 100;
+  char score_buf[buf_size]{};
+  snprintf(score_buf, buf_size, "Score: %d\n", tilemap_.game_points);
+  print_text(10, 10, 2, score_buf, 0);
   draw_tetramino(active_tetramino_);
   draw_tetramino(sliding_tetramino_);
   draw_trajectory();

@@ -24,6 +24,7 @@ Tilemap::Tilemap() {
 
 void Tilemap::init() {
   game_points = 0;
+  tile_out_of_bounds = false;
 
   std::memset(tilemap_, 0, sizeof(tilemap_));
   tilemap_[TILES_X / 2 - 1][TILES_Y / 2 - 1].occupied = true;
@@ -129,7 +130,7 @@ void Tilemap::place_tetramino(const ActiveTetramino& block) {
   }
 
   check_rows();
-  // CheckTilesOOB();
+  check_bounds();
 }
 
 bool Tilemap::can_move(const ActiveTetramino& block, int dx, int dy) const {
@@ -216,6 +217,48 @@ void Tilemap::check_rows() {
   }
 
   trace("Game points: %d\n", game_points);
+}
+
+void Tilemap::check_bounds() {
+  constexpr int PADDING = (TILES_X - DEATH_LENGTH) / 2;
+  const int startX = PADDING, startY = PADDING;
+  const int endX = startX + DEATH_LENGTH, endY = startY + DEATH_LENGTH;
+
+  tile_out_of_bounds = false;
+
+  for (size_t i = 0; i < startY; i++) {
+    for (size_t j = 0; j < TILES_X; j++) {
+      check_and_flag_oob(i, j);
+    }
+  }
+
+  for (size_t i = endY; i < TILES_Y; i++) {
+    for (size_t j = 0; j < TILES_X; j++) {
+      check_and_flag_oob(i, j);
+    }
+  }
+
+  // We only check the columns outside the center for the middle rows
+  for (size_t i = startY; i < endY; i++) {
+    for (size_t j = 0; j < startX; j++) {
+      check_and_flag_oob(i, j);
+    }
+  }
+
+  // We only check the columns outside the center for the middle rows
+  for (size_t i = startY; i < endY; i++) {
+    for (size_t j = endX; j < TILES_X; j++) {
+      check_and_flag_oob(i, j);
+    }
+  }
+}
+
+void Tilemap::check_and_flag_oob(size_t i, size_t j) {
+  if (!is_blank(tilemap_[j][i])) {
+    trace("OOB tile at %lu %lu!\n", i, j);
+    tilemap_[j][i].flags = TileFlags::OOB;
+    tile_out_of_bounds = true;
+  }
 }
 
 void Tilemap::get_tetramino_tilemap_pos_corner(const ActiveTetramino& block, int& x, int& y) const {

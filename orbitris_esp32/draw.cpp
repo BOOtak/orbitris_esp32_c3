@@ -1,6 +1,17 @@
 #include "draw.h"
 
 #include <cstdlib>
+#include <cstdint>
+#include <cstring>
+
+#include "charmap.h"
+#include "const.h"
+
+constexpr int FONT_CHAR_WIDTH = 5;
+constexpr int FONT_CHAR_HEIGHT = 8;
+constexpr int FONT_START_CHAR = 0x20;
+constexpr int FONT_END_CHAR = 0x7E;
+constexpr int FONT_MAP_SIZE = FONT_END_CHAR - FONT_START_CHAR + 1;
 
 extern void lcd_draw_pixel(int x, int y, int color);
 
@@ -32,7 +43,7 @@ void draw_rectangle_lines(int posX, int posY, int width, int height, int color) 
   }
 }
 
-void draw_rectangle_lines_pattern(const Rectangle &rect, uint8_t pattern_size, uint8_t pattern) {
+void draw_rectangle_lines_pattern(const Rectangle& rect, uint8_t pattern_size, uint8_t pattern) {
   int pattern_state = 0;
   auto get_color = [&pattern_state, pattern, pattern_size]() {
     return (pattern >> (7 - (pattern_state++ % pattern_size))) & 1;
@@ -96,4 +107,69 @@ int draw_line_pattern(int x0, int y0, int x1, int y1, int pattern_state, uint8_t
   }
 
   return pattern_state;
+}
+
+/**
+ * @brief Draws a single character bitmap to the LCD with scaling.
+ */
+void draw_char(int draw_x, int draw_y, int scale, uint8_t char_code, int color) {
+  int index = char_code - FONT_START_CHAR;
+  if (index < 0 || index >= FONT_MAP_SIZE) {
+    index = 0;
+  }
+
+  const uint8_t* char_data = charMap[index];
+
+  for (int col = 0; col < FONT_CHAR_WIDTH; ++col) {
+    uint8_t column_byte = char_data[col];
+
+    for (int row = 0; row < FONT_CHAR_HEIGHT; ++row) {
+      if (column_byte & (1 << row)) {
+
+        int px_x = draw_x + col * scale;
+        int px_y = draw_y + row * scale;
+
+        // Scale the pixel block
+        for (int i = 0; i < scale; ++i) {
+          for (int j = 0; j < scale; ++j) {
+            int final_x = px_x + i;
+            int final_y = px_y + j;
+
+            // Bounds check
+            if (final_x >= 0 && final_x < LCD_WIDTH && final_y >= 0 && final_y < LCD_HEIGHT) {
+              lcd_draw_pixel(final_x, final_y, color);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void print_text(int x, int y, int scale, const char* text, int color) {
+  if (scale < 1) return;
+
+  const int scaled_char_width = FONT_CHAR_WIDTH * scale;
+  const int scaled_char_height = FONT_CHAR_HEIGHT * scale;
+
+  int current_x = x;
+  int current_y = y;
+
+  for (const char* p = text; *p != '\0'; ++p) {
+    char current_char = *p;
+
+    if (current_char == '\n') {
+      current_x = x;
+      current_y += scaled_char_height;
+      if (current_y + scaled_char_height > LCD_HEIGHT) break;
+      continue;
+    }
+
+    if (current_y + scaled_char_height > LCD_HEIGHT) {
+      break;
+    }
+
+    draw_char(current_x, current_y, scale, current_char, color);
+    current_x += scaled_char_width;
+  }
 }

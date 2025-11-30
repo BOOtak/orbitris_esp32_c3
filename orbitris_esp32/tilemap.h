@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdlib>
+
 #include "game_utils.h"
 #include "tetramino.h"
 
@@ -29,6 +31,8 @@ struct TileDeleteInfo {
 class Tilemap {
 public:
   int game_points{};
+
+  bool tile_out_of_bounds{};
 
   Tilemap();
 
@@ -69,6 +73,10 @@ private:
   bool is_blank(const Tile& tile) const;
 
   void check_rows();
+
+  void check_bounds();
+
+  void check_and_flag_oob(size_t i, size_t j);
 
   void get_tetramino_tilemap_pos(const ActiveTetramino& block, int (*coords)[2]) const;
 
