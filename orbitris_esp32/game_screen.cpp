@@ -18,15 +18,15 @@
 
 // #include <Arduino.h>
 
-constexpr float DIST_SCALE = 6.5E8;
-constexpr float STAR_MASS = 1.98855E30;
+constexpr float DIST_SCALE = 6.5E8f;
+constexpr float STAR_MASS = 1.98855E30f;
 
 constexpr int resolution_min = 1;  // times per frame
 constexpr int resolution_max = 10;
 constexpr int d_resolution = resolution_max - resolution_min;
 
-constexpr float dist_max = 1.496E11;
-constexpr float dist_min = 3.5E8;
+constexpr float dist_max = 1.496E11f;
+constexpr float dist_min = 3.5E8f;
 constexpr float d_dist = dist_max - dist_min;
 
 constexpr auto trajectory_size = 50;
@@ -78,10 +78,10 @@ Screen* GameScreen::update() {
   }
 
   if (is_key_down(ESP_KEY_UP)) {
-    planet_state_.angle.speed += 1.0E-9;
+    planet_state_.angle.speed += 1.0E-9f;
   }
   if (is_key_down(ESP_KEY_DOWN)) {
-    planet_state_.angle.speed -= 1.0E-9;
+    planet_state_.angle.speed -= 1.0E-9f;
   }
 
   if (is_key_pressed(ESP_KEY_LEFT)) {
@@ -113,8 +113,8 @@ int GameScreen::get_resolution(const PlanetState& planet) {
 
 void GameScreen::reset_planet_state() {
   planet_state_ = {};
-  planet_state_.distance.value = 1.496E11;
-  planet_state_.angle.speed = 1.990986E-7;
+  planet_state_.distance.value = 1.496E11f;
+  planet_state_.angle.speed = 1.990986E-7f;
 }
 
 void GameScreen::generate_next_tetramino() {
