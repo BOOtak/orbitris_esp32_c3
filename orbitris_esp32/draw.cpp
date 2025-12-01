@@ -1,5 +1,6 @@
 #include "draw.h"
 
+#include <cmath>
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
@@ -13,15 +14,39 @@ constexpr int FONT_START_CHAR = 0x20;
 constexpr int FONT_END_CHAR = 0x7E;
 constexpr int FONT_MAP_SIZE = FONT_END_CHAR - FONT_START_CHAR + 1;
 
+constexpr float ZOOM_EPSILON = 0.01f;
+
+static bool g_should_scale = false;
+static float g_scale = 1.0f;
+
 extern void lcd_draw_pixel(int x, int y, int color);
 
 extern void lcd_fill_buffer(int color);
+
+void begin_scale(float scale) {
+  if (fabsf(scale - 1.0f) > ZOOM_EPSILON) {
+    g_should_scale = true;
+    g_scale = scale;
+  }
+}
+
+void end_scale() {
+  g_should_scale = false;
+  g_scale = 1.0f;
+}
 
 void fill_scrfeen_buffer(int color) {
   lcd_fill_buffer(color);
 }
 
 void draw_rectangle_lines(int posX, int posY, int width, int height, int color) {
+  if (g_should_scale) {
+    posX = (posX - CENTER_X) * g_scale + CENTER_X;
+    posY = (posY - CENTER_Y) * g_scale + CENTER_Y;
+    width = width * g_scale;
+    height = height * g_scale;
+  }
+
   // Draw top horizontal line
   for (int x = posX; x < posX + width; x++) {
     lcd_draw_pixel(x, posY, color);
@@ -44,29 +69,49 @@ void draw_rectangle_lines(int posX, int posY, int width, int height, int color) 
 }
 
 void draw_rectangle_lines_pattern(const Rectangle& rect, uint8_t pattern_size, uint8_t pattern) {
+  int rx, ry, rw, rh;
+  if (g_should_scale) {
+    rx = (rect.x - CENTER_X) * g_scale + CENTER_X;
+    ry = (rect.y - CENTER_Y) * g_scale + CENTER_Y;
+    rw = rect.width * g_scale;
+    rh = rect.height * g_scale;
+  } else {
+    rx = rect.x;
+    ry = rect.y;
+    rw = rect.width;
+    rh = rect.height;
+  }
+
   int pattern_state = 0;
   auto get_color = [&pattern_state, pattern, pattern_size]() {
     return (pattern >> (7 - (pattern_state++ % pattern_size))) & 1;
   };
 
-  for (int x = rect.x; x < rect.x + rect.width; x++) {
-    lcd_draw_pixel(x, rect.y, get_color());
+  for (int x = rx; x < rx + rw; x++) {
+    lcd_draw_pixel(x, ry, get_color());
   }
 
-  for (int y = rect.y; y < rect.y + rect.height; y++) {
-    lcd_draw_pixel(rect.x + rect.width - 1, y, get_color());
+  for (int y = ry; y < ry + rh; y++) {
+    lcd_draw_pixel(rx + rw - 1, y, get_color());
   }
 
-  for (int x = rect.x + rect.width - 1; x >= rect.x; x--) {
-    lcd_draw_pixel(x, rect.y + rect.height - 1, get_color());
+  for (int x = rx + rw - 1; x >= rx; x--) {
+    lcd_draw_pixel(x, ry + rh - 1, get_color());
   }
 
-  for (int y = rect.y + rect.height - 1; y >= rect.y; y--) {
-    lcd_draw_pixel(rect.x, y, get_color());
+  for (int y = ry + rh - 1; y >= ry; y--) {
+    lcd_draw_pixel(rx, y, get_color());
   }
 }
 
 void draw_line(int x0, int y0, int x1, int y1, int color) {
+  if (g_should_scale) {
+    x0 = ((x0 - CENTER_X) * g_scale) + CENTER_X;
+    y0 = ((y0 - CENTER_Y) * g_scale) + CENTER_Y;
+    x1 = ((x1 - CENTER_X) * g_scale) + CENTER_X;
+    y1 = ((y1 - CENTER_Y) * g_scale) + CENTER_Y;
+  }
+
   int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
   int dy = abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
   int err = (dx > dy ? dx : -dy) / 2, e2;
@@ -87,6 +132,13 @@ void draw_line(int x0, int y0, int x1, int y1, int color) {
 }
 
 int draw_line_pattern(int x0, int y0, int x1, int y1, int pattern_state, uint8_t pattern_size, uint8_t pattern) {
+  if (g_should_scale) {
+    x0 = ((x0 - CENTER_X) * g_scale) + CENTER_X;
+    y0 = ((y0 - CENTER_Y) * g_scale) + CENTER_Y;
+    x1 = ((x1 - CENTER_X) * g_scale) + CENTER_X;
+    y1 = ((y1 - CENTER_Y) * g_scale) + CENTER_Y;
+  }
+
   int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
   int dy = abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
   int err = (dx > dy ? dx : -dy) / 2, e2;

@@ -27,12 +27,18 @@ private:
   PlanetState planet_state_;
   Vector2 star_pos_{ LCD_WIDTH / 2, LCD_HEIGHT / 2 };
   float delta_time_;
+  float current_zoom_;
+  float target_zoom_;
 
   int get_resolution(const PlanetState& planet);
 
   void reset_planet_state();
   void generate_next_tetramino();
   void update_sliding_tetramino(ActiveTetramino& block);
-  void draw_trajectory();
+
+  /**
+   * @return trajectory apoapsis
+   */
+  float draw_trajectory();
   void draw_boundaries();
 };

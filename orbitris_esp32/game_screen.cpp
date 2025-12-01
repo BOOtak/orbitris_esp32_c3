@@ -25,6 +25,13 @@ constexpr float dist_max = 1.496E11f;
 constexpr float dist_min = 3.5E8f;
 constexpr float d_dist = dist_max - dist_min;
 
+constexpr float SCALE_MIN_DIST = LCD_HEIGHT * 1.5f;
+constexpr float SCALE_MAX_DIST = LCD_HEIGHT / 2.0f;
+
+constexpr float SCALE_MIN = 0.33f;
+constexpr float SCALE_MAX = 1.0f;
+constexpr float ZOOM_SPEED = 0.005f;
+
 constexpr auto trajectory_size = 50;
 
 constexpr float PROGRESS_SPEED = 0.05f;
@@ -44,6 +51,9 @@ void GameScreen::init() {
 
   reset_planet_state();
   delta_time_ = 3600 * 24;
+
+  current_zoom_ = 1.0f;
+  target_zoom_ = 1.0f;
 
   tilemap_.init();
 }
@@ -95,15 +105,33 @@ Screen* GameScreen::update() {
 
 void GameScreen::draw() {
   fill_scrfeen_buffer(1);
+
+  float diff = current_zoom_ - target_zoom_;
+  if (fabs(diff) > ZOOM_SPEED) {
+    int dir = diff < 0 ? 1 : -1;
+    current_zoom_ += ZOOM_SPEED * dir;
+  }
+
+  begin_scale(current_zoom_);
+  draw_tetramino(active_tetramino_);
+  draw_tetramino(sliding_tetramino_);
+  float apoapsis = draw_trajectory();
+  draw_boundaries();
+  tilemap_.draw();
+  end_scale();
+
+  if (apoapsis > DIST_THRESHOLD) {
+    float scaled_apoapsis = apoapsis / DIST_SCALE;
+    target_zoom_ = remap(std::clamp(scaled_apoapsis, SCALE_MAX_DIST, SCALE_MIN_DIST),
+                         SCALE_MAX_DIST, SCALE_MIN_DIST, SCALE_MAX, SCALE_MIN);
+  } else {
+    target_zoom_ = 1.0f;
+  }
+
   constexpr auto buf_size = 100;
   char score_buf[buf_size]{};
   snprintf(score_buf, buf_size, "Score: %d\n", tilemap_.game_points);
   print_text(10, 10, 2, score_buf, 0);
-  draw_tetramino(active_tetramino_);
-  draw_tetramino(sliding_tetramino_);
-  draw_trajectory();
-  draw_boundaries();
-  tilemap_.draw();
 }
 
 /**
@@ -212,11 +240,11 @@ void GameScreen::update_sliding_tetramino(ActiveTetramino& block) {
   block.progress = 0.0f;
 }
 
-void GameScreen::draw_trajectory() {
+float GameScreen::draw_trajectory() {
   OrbitalElements elements = calc_orbital_elements(planet_state_, STAR_MASS);
   if (elements.eccentricity >= 1.0f) {
     // TODO: draw open orbit!
-    return;
+    return 0.0f;
   }
 
   // Calculate the step size for the true anomaly
@@ -257,6 +285,9 @@ void GameScreen::draw_trajectory() {
 
     prev = cur;
   }
+
+  // Calculate orbit apoapsis
+  return elements.semi_latus_rectum / (1.0f - elements.eccentricity);
 }
 
 void GameScreen::draw_boundaries() {
