@@ -14,7 +14,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-constexpr float DIST_SCALE = 6.5E8f;
+constexpr float DIST_SCALE = 6.5E8f * 2;
 constexpr float STAR_MASS = 1.98855E30f;
 
 constexpr int resolution_min = 1;  // times per frame
