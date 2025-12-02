@@ -75,10 +75,7 @@ Screen* GameScreen::update() {
   }
 
   if (collision.width > 0 && collision.height > 0) {
-    sliding_tetramino_.block = active_tetramino_.block;
-    sliding_tetramino_.pos.x = active_tetramino_.pos.x;
-    sliding_tetramino_.pos.y = active_tetramino_.pos.y;
-    sliding_tetramino_.rot_index = active_tetramino_.rot_index;
+    sliding_tetramino_ = active_tetramino_;
     sliding_tetramino_.progress = 1.1f;  // to check where to slide it first
     reset_planet_state();
     generate_next_tetramino();
