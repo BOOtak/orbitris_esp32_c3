@@ -6,12 +6,13 @@
 #include "game_utils.h"
 #include "orbital.h"
 #include "screen.h"
+#include "stats.h"
 #include "tetramino.h"
 #include "tilemap.h"
 
 class GameScreen : public Screen {
 public:
-  GameScreen();
+  GameScreen(Stats& stats);
 
   virtual void init() override;
 
@@ -19,7 +20,10 @@ public:
 
   virtual void draw() override;
 
+  virtual void close() override;
+
 private:
+  Stats& stats_;
   Tilemap tilemap_{};
   ActiveTetramino active_tetramino_;
   ActiveTetramino next_tetramino_;

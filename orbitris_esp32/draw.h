@@ -8,7 +8,11 @@ void begin_scale(float scale);
 
 void end_scale();
 
+void draw_pixel(int x, int y, int color);
+
 void fill_scrfeen_buffer(int color);
+
+void draw_rectangle(const Rectangle& rect, int color);
 
 void draw_rectangle_lines(int posX, int posY, int width, int height, int color);
 

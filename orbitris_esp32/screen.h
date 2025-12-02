@@ -16,5 +16,6 @@ public:
 };
 
 namespace screens {
-  extern Screen* game_screen;
+extern Screen* game_screen;
+extern Screen* game_over_screen;
 }

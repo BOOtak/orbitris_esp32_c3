@@ -41,10 +41,12 @@ const uint8_t patterns[] = { 0x00, 0x11, 0x24, 0x55, 0xd8, 0xee, 0xf0, 0xf8 };
 const uint8_t pattern_sizes[] = { 8, 8, 6, 8, 6, 8, 5, 6 };
 constexpr auto patterns_count = std::size(patterns);
 
-GameScreen::GameScreen()
-  : Screen() {}
+GameScreen::GameScreen(Stats& stats)
+  : Screen(), stats_{ stats } {}
 
 void GameScreen::init() {
+  stats_ = {};
+
   active_tetramino_ = { 0, { 0.0, 0.0 }, &J_Block };
   next_tetramino_ = {};
   sliding_tetramino_ = {};
@@ -80,6 +82,10 @@ Screen* GameScreen::update() {
     reset_planet_state();
     generate_next_tetramino();
     active_tetramino_.pos = state_to_coords(planet_state_, DIST_SCALE, star_pos_);
+  }
+
+  if (tilemap_.tile_out_of_bounds) {
+    return screens::game_over_screen;
   }
 
   update_sliding_tetramino(sliding_tetramino_);
@@ -129,6 +135,10 @@ void GameScreen::draw() {
   char score_buf[buf_size]{};
   snprintf(score_buf, buf_size, "Score: %d\n", tilemap_.game_points);
   print_text(10, 10, 2, score_buf, 0);
+}
+
+void GameScreen::close() {
+  stats_.game_points = tilemap_.game_points;
 }
 
 /**

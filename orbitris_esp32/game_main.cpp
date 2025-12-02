@@ -1,7 +1,9 @@
 #include "game_main.h"
 
 #include "game_screen.h"
+#include "game_over_screen.h"
 #include "screen.h"
+#include "stats.h"
 #include "table_math.h"
 
 Screen* current_screen = nullptr;
@@ -21,7 +23,9 @@ void update_screen() {
 
 void init_game() {
   init_trig_tables();
-  screens::game_screen = new GameScreen();
+  Stats stats{};
+  screens::game_screen = new GameScreen(stats);
+  screens::game_over_screen = new GameOverScreen(stats);
   current_screen = screens::game_screen;
   current_screen->init();
 }

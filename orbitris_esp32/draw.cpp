@@ -35,8 +35,38 @@ void end_scale() {
   g_scale = 1.0f;
 }
 
+void draw_pixel(int x, int y, int color) {
+  if (g_should_scale) {
+    x = ((x - CENTER_X) * g_scale) + CENTER_X;
+    y = ((y - CENTER_Y) * g_scale) + CENTER_Y;
+  }
+
+  lcd_draw_pixel(x, y, color);
+}
+
 void fill_scrfeen_buffer(int color) {
   lcd_fill_buffer(color);
+}
+
+void draw_rectangle(const Rectangle& rect, int color) {
+  int rx, ry, rw, rh;
+  if (g_should_scale) {
+    rx = (rect.x - CENTER_X) * g_scale + CENTER_X;
+    ry = (rect.y - CENTER_Y) * g_scale + CENTER_Y;
+    rw = rect.width * g_scale;
+    rh = rect.height * g_scale;
+  } else {
+    rx = rect.x;
+    ry = rect.y;
+    rw = rect.width;
+    rh = rect.height;
+  }
+
+  for (int i = rx; i < rx + rw; i++) {
+    for (int j = ry; j < ry + rh; j++) {
+      lcd_draw_pixel(i, j, color);
+    }
+  }
 }
 
 void draw_rectangle_lines(int posX, int posY, int width, int height, int color) {

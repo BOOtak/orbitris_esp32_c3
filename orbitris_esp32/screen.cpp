@@ -9,5 +9,6 @@ void Screen::draw() {}
 void Screen::close() {}
 
 namespace screens {
-  Screen* game_screen = nullptr;
+Screen* game_screen = nullptr;
+Screen* game_over_screen = nullptr;
 }
