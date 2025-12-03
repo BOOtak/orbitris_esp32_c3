@@ -261,7 +261,8 @@ float GameScreen::draw_trajectory() {
   }
 
   // Calculate the step size for the true anomaly
-  const float d_nu = 2.0f * (float)M_PI / (float)trajectory_size;
+  int dir = planet_state_.angle.speed > 0 ? 1 : -1;
+  const float d_nu = 2.0f * (float)M_PI / (float)trajectory_size * dir;
 
   Vector2 cur{};
   Vector2 prev{};
