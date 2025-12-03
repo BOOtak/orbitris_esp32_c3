@@ -37,6 +37,8 @@ constexpr auto trajectory_size = 50;
 constexpr float PROGRESS_SPEED = 0.05f;
 constexpr float DIST_THRESHOLD = 0.0001f;
 
+constexpr Vector2 NEXT_TETRAMINO_POS = { 80, 20 };
+
 const uint8_t patterns[] = { 0x00, 0x11, 0x24, 0x55, 0xd8, 0xee, 0xf0, 0xf8 };
 const uint8_t pattern_sizes[] = { 8, 8, 6, 8, 6, 8, 5, 6 };
 constexpr auto patterns_count = std::size(patterns);
@@ -47,9 +49,11 @@ GameScreen::GameScreen(Stats& stats)
 void GameScreen::init() {
   stats_ = {};
 
-  active_tetramino_ = { 0, { 0.0, 0.0 }, &J_Block };
-  next_tetramino_ = {};
+  active_tetramino_ = {};
+  next_tetramino_ = { 0, NEXT_TETRAMINO_POS, nullptr };
   sliding_tetramino_ = {};
+
+  generate_next_tetramino();
 
   reset_planet_state();
   delta_time_ = 3600 * 24;
@@ -134,7 +138,9 @@ void GameScreen::draw() {
   constexpr auto buf_size = 100;
   char score_buf[buf_size]{};
   snprintf(score_buf, buf_size, "Score: %d\n", tilemap_.game_points);
-  print_text(10, 10, 2, score_buf, 0);
+  print_text(280, 10, 2, score_buf, 0);
+  print_text(10, 10, 2, "Next:", 0);
+  draw_tetramino(next_tetramino_);
 }
 
 void GameScreen::close() {
