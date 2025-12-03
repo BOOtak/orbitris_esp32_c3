@@ -7,7 +7,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-constexpr auto TABLE_STEPS = 90;
+constexpr auto TABLE_STEPS = 180;
 constexpr auto TABLE_SIZE = TABLE_STEPS + 1;
 constexpr float MAX_ANGLE = M_PI / 2.0f;
 constexpr float TWO_PI = 2.0f * M_PI;
