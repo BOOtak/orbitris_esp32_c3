@@ -7,6 +7,7 @@
 #include "table_math.h"
 
 Screen* current_screen = nullptr;
+Stats stats{};
 
 void change_screen(Screen* from, Screen* to) {
   from->close();
@@ -23,7 +24,6 @@ void update_screen() {
 
 void init_game() {
   init_trig_tables();
-  Stats stats{};
   screens::game_screen = new GameScreen(stats);
   screens::game_over_screen = new GameOverScreen(stats);
   current_screen = screens::game_screen;
