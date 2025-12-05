@@ -10,7 +10,7 @@ constexpr auto TILES_Y = 20;
 constexpr auto ROW_LENGTH = 8;
 constexpr auto DEATH_LENGTH = 12;
 
-enum class TileFlags {
+enum class TileFlags : uint8_t {
   NONE = 0,
   TO_DELETE,
   OOB
