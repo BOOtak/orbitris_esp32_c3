@@ -69,6 +69,23 @@ void draw_rectangle(const Rectangle& rect, int color) {
   }
 }
 
+void draw_rectangle_checkerboard(int posX, int posY, int width, int height) {
+  if (g_should_scale) {
+    posX = (posX - CENTER_X) * g_scale + CENTER_X;
+    posY = (posY - CENTER_Y) * g_scale + CENTER_Y;
+    width = width * g_scale;
+    height = height * g_scale;
+  }
+
+  for (int i = posX; i < posX + width; i++) {
+    for (int j = posY; j < posY + height; j++) {
+      if ((i + j) & 1) {
+        lcd_draw_pixel(i, j, 0);
+      }
+    }
+  }
+}
+
 void draw_rectangle_lines(int posX, int posY, int width, int height, int color) {
   if (g_should_scale) {
     posX = (posX - CENTER_X) * g_scale + CENTER_X;

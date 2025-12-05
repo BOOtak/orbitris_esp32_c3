@@ -63,7 +63,7 @@ void Tilemap::draw() {
 
       int posX = (i - TILES_X / 2) * TILE_W + CENTER_X + (TILE_W - size) / 2;
       int posY = (j - TILES_Y / 2) * TILE_H + CENTER_Y + (TILE_H - size) / 2;
-      draw_rectangle_lines(posX, posY, size, size, 0);
+      draw_tile(posX, posY, size);
     }
   }
 }

@@ -150,13 +150,22 @@ Tetramino* get_random_block() {
   return Blocks[get_random_value(0, ARR_SIZE(Blocks) - 1)];
 }
 
+void draw_tile(int x, int y, int size) {
+  draw_rectangle_lines(x, y, size, size, 0);
+  draw_rectangle_checkerboard(x, y, size, size);
+  draw_pixel(x, y, 1);
+  draw_pixel(x + size - 1, y, 1);
+  draw_pixel(x, y + size - 1, 1);
+  draw_pixel(x + size - 1, y + size - 1, 1);
+}
+
 void draw_tetramino(const ActiveTetramino& tetramino) {
   if (tetramino.block == nullptr) {
     return;
   }
 
   int rot_index = tetramino.rot_index;
-  uint8_t(*block)[4] = tetramino.block->data[rot_index];
+  uint8_t (*block)[4] = tetramino.block->data[rot_index];
 
   float startX = tetramino.pos.x - tetramino.block->center.x * TILE_W;
   float startY = tetramino.pos.y - tetramino.block->center.y * TILE_H;
@@ -167,7 +176,7 @@ void draw_tetramino(const ActiveTetramino& tetramino) {
         continue;
       }
 
-      draw_rectangle_lines(startX + j * TILE_W, startY + i * TILE_H, TILE_W, TILE_H, 0);
+      draw_tile(startX + j * TILE_W, startY + i * TILE_H, TILE_W);
     }
   }
 }
