@@ -40,7 +40,7 @@ public:
 
   void update();
 
-  void draw();
+  void draw() const;
 
   Rectangle intersect_tiles(const ActiveTetramino& block);
 

@@ -107,26 +107,18 @@ Screen* GameScreen::update() {
     active_tetramino_.rot_index = (active_tetramino_.rot_index + 1) % 4;
   }
 
-  return this;
-}
+  if (is_key_pressed(ESP_KEY_A)) {
+    return screens::game_over_screen;
+  }
 
-void GameScreen::draw() {
-  fill_scrfeen_buffer(1);
-
+  // prepare for draw
   float diff = current_zoom_ - target_zoom_;
   if (fabs(diff) > ZOOM_SPEED) {
     int dir = diff < 0 ? 1 : -1;
     current_zoom_ += ZOOM_SPEED * dir;
   }
 
-  begin_scale(current_zoom_);
-  draw_tetramino(active_tetramino_);
-  draw_tetramino(sliding_tetramino_);
-  float apoapsis = draw_trajectory();
-  draw_boundaries();
-  tilemap_.draw();
-  end_scale();
-
+  float apoapsis = calc_apoapsis(planet_state_, STAR_MASS);
   if (apoapsis > DIST_THRESHOLD) {
     float scaled_apoapsis = apoapsis / DIST_SCALE;
     target_zoom_ = remap(std::clamp(scaled_apoapsis, SCALE_MAX_DIST, SCALE_MIN_DIST),
@@ -134,6 +126,20 @@ void GameScreen::draw() {
   } else {
     target_zoom_ = 1.0f;
   }
+
+  return this;
+}
+
+void GameScreen::draw() const {
+  fill_scrfeen_buffer(1);
+
+  begin_scale(current_zoom_);
+  draw_tetramino(active_tetramino_);
+  draw_tetramino(sliding_tetramino_);
+  draw_trajectory();
+  draw_boundaries();
+  tilemap_.draw();
+  end_scale();
 
   constexpr auto buf_size = 100;
   char score_buf[buf_size]{};
@@ -253,11 +259,11 @@ void GameScreen::update_sliding_tetramino(ActiveTetramino& block) {
   block.progress = 0.0f;
 }
 
-float GameScreen::draw_trajectory() {
+void GameScreen::draw_trajectory() const {
   OrbitalElements elements = calc_orbital_elements(planet_state_, STAR_MASS);
   if (elements.eccentricity >= 1.0f) {
     // TODO: draw open orbit!
-    return 0.0f;
+    return;
   }
 
   // Calculate the step size for the true anomaly
@@ -299,12 +305,9 @@ float GameScreen::draw_trajectory() {
 
     prev = cur;
   }
-
-  // Calculate orbit apoapsis
-  return elements.semi_latus_rectum / (1.0f - elements.eccentricity);
 }
 
-void GameScreen::draw_boundaries() {
+void GameScreen::draw_boundaries() const {
   // draw tetirs boundaries
   Rectangle rect{
     0.0f, 0.0f,

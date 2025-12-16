@@ -49,7 +49,7 @@ void Tilemap::update() {
   }
 }
 
-void Tilemap::draw() {
+void Tilemap::draw() const {
   for (size_t i = 0; i < TILES_X; i++) {
     for (size_t j = 0; j < TILES_Y; j++) {
       if (is_blank(tilemap_[i][j])) {

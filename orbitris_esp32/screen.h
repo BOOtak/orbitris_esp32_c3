@@ -10,7 +10,7 @@ public:
 
   virtual Screen* update() = 0;
 
-  virtual void draw();
+  virtual void draw() const;
 
   virtual void close();
 };

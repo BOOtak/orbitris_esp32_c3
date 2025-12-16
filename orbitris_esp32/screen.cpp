@@ -4,7 +4,7 @@ Screen::Screen() {}
 
 void Screen::init() {}
 
-void Screen::draw() {}
+void Screen::draw() const {}
 
 void Screen::close() {}
 

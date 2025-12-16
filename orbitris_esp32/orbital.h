@@ -38,3 +38,5 @@ void update_planet_state(PlanetState& state, float dt, float star_mass);
  * @return OrbitalElements The structure containing p, e, and omega.
  */
 OrbitalElements calc_orbital_elements(const PlanetState& state, float star_mass);
+
+float calc_apoapsis(const PlanetState& state, float star_mass);

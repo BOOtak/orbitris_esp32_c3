@@ -13,7 +13,7 @@ public:
 
   virtual Screen* update() override;
 
-  virtual void draw() override;
+  virtual void draw() const override;
 
 private:
   const Stats& stats_;

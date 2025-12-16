@@ -30,7 +30,7 @@ Screen *GameOverScreen::update() {
   return this;
 }
 
-void GameOverScreen::draw() {
+void GameOverScreen::draw() const {
   constexpr int text_x = 150;
   constexpr int text_y = 112;
 

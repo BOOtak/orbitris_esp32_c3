@@ -18,7 +18,7 @@ public:
 
   virtual Screen* update() override;
 
-  virtual void draw() override;
+  virtual void draw() const override;
 
   virtual void close() override;
 
@@ -40,9 +40,6 @@ private:
   void generate_next_tetramino();
   void update_sliding_tetramino(ActiveTetramino& block);
 
-  /**
-   * @return trajectory apoapsis
-   */
-  float draw_trajectory();
-  void draw_boundaries();
+  void draw_trajectory() const;
+  void draw_boundaries() const;
 };

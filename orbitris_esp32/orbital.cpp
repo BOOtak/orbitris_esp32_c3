@@ -104,3 +104,12 @@ OrbitalElements calc_orbital_elements(const PlanetState& state, float star_mass)
 
   return elements;
 }
+
+float calc_apoapsis(const PlanetState& state, float star_mass) {
+  OrbitalElements elements = calc_orbital_elements(state, star_mass);
+  if (elements.eccentricity > 1) {
+    return 0.0f;
+  }
+
+  return elements.semi_latus_rectum / (1.0f - elements.eccentricity);
+}
