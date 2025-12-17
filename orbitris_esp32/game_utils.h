@@ -16,6 +16,8 @@ struct Rectangle {
 
 float remap(float value, float inputStart, float inputEnd, float outputStart, float outputEnd);
 
+float lerp(float start, float end, float amount);
+
 bool check_collision_recs(const Rectangle& rec1, const Rectangle& rec2);
 
 // Get collision rectangle for two rectangles collision

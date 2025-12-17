@@ -4,9 +4,32 @@
 
 #include "game_utils.h"
 
+struct DrawMask {
+  uint8_t mask[8];
+};
+
+constexpr DrawMask operator~(const DrawMask& m) {
+  return { (uint8_t)~m.mask[0],
+           (uint8_t)~m.mask[1],
+           (uint8_t)~m.mask[2],
+           (uint8_t)~m.mask[3],
+           (uint8_t)~m.mask[4],
+           (uint8_t)~m.mask[5],
+           (uint8_t)~m.mask[6],
+           (uint8_t)~m.mask[7] };
+}
+
 void begin_scale(float scale);
 
 void end_scale();
+
+void begin_screen_scale(float scale);
+
+void end_screen_scale();
+
+void begin_mask(DrawMask draw_mask);
+
+void end_mask();
 
 void draw_pixel(int x, int y, int color);
 

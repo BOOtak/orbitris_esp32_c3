@@ -11,14 +11,6 @@ GameOverScreen::GameOverScreen(const Stats &stats) : Screen(), stats_{ stats } {
 }
 
 void GameOverScreen::init() {
-  for (size_t i = 0; i < LCD_WIDTH; i++) {
-    for (size_t j = 0; j < LCD_HEIGHT; j++) {
-      if ((i + j) & 1) {
-        draw_pixel(i, j, 0);
-      }
-    }
-  }
-
   snprintf(score_buffer_, bufsize, "Game Over!\nScore: %d", stats_.game_points);
 }
 
@@ -31,6 +23,7 @@ Screen *GameOverScreen::update() {
 }
 
 void GameOverScreen::draw() const {
+  fill_scrfeen_buffer(1);
   constexpr int text_x = 150;
   constexpr int text_y = 112;
 

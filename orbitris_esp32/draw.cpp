@@ -14,25 +14,71 @@ constexpr int FONT_START_CHAR = 0x20;
 constexpr int FONT_END_CHAR = 0x7E;
 constexpr int FONT_MAP_SIZE = FONT_END_CHAR - FONT_START_CHAR + 1;
 
-constexpr float ZOOM_EPSILON = 0.01f;
+constexpr float SCALE_EPSILON = 0.01f;
 
+// Scaling
 static bool g_should_scale = false;
+static float g_draw_scale = 1.0f;
+static float g_screen_scale = 1.0f;
 static float g_scale = 1.0f;
+
+// Draw masking
+static bool g_should_mask = false;
+static DrawMask g_draw_mask = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
 extern void lcd_draw_pixel(int x, int y, int color);
 
 extern void lcd_fill_buffer(int color);
 
-void begin_scale(float scale) {
-  if (fabsf(scale - 1.0f) > ZOOM_EPSILON) {
+extern void lcd_fill_line(int line, uint8_t pattern, int color);
+
+static void update_scale() {
+  g_scale = g_draw_scale * g_screen_scale;
+  if (fabsf(g_scale - 1.0f) > SCALE_EPSILON) {
     g_should_scale = true;
-    g_scale = scale;
+  } else {
+    g_should_scale = false;
   }
 }
 
+void begin_scale(float scale) {
+  g_draw_scale = scale;
+  update_scale();
+}
+
 void end_scale() {
-  g_should_scale = false;
-  g_scale = 1.0f;
+  g_draw_scale = 1.0f;
+  update_scale();
+}
+
+void begin_screen_scale(float scale) {
+  g_screen_scale = scale;
+  update_scale();
+}
+
+void end_screen_scale() {
+  g_screen_scale = 1.0f;
+  update_scale();
+}
+
+void begin_mask(DrawMask draw_mask) {
+  g_should_mask = true;
+  g_draw_mask = draw_mask;
+}
+
+void end_mask() {
+  g_should_mask = false;
+}
+
+static void draw_pixel_masked(int x, int y, int color) {
+  if (g_should_mask) {
+    int masked_bit = 0x80 >> (x & 7);
+    if (g_draw_mask.mask[y & 7] & masked_bit) {
+      lcd_draw_pixel(x, y, color);
+    }
+  } else {
+    lcd_draw_pixel(x, y, color);
+  }
 }
 
 void draw_pixel(int x, int y, int color) {
@@ -41,11 +87,17 @@ void draw_pixel(int x, int y, int color) {
     y = ((y - CENTER_Y) * g_scale) + CENTER_Y;
   }
 
-  lcd_draw_pixel(x, y, color);
+  draw_pixel_masked(x, y, color);
 }
 
 void fill_scrfeen_buffer(int color) {
-  lcd_fill_buffer(color);
+  if (g_should_mask) {
+    for (size_t i = 0; i < LCD_HEIGHT; i++) {
+      lcd_fill_line(i, g_draw_mask.mask[i & 7], color);
+    }
+  } else {
+    lcd_fill_buffer(color);
+  }
 }
 
 void draw_rectangle(const Rectangle& rect, int color) {
@@ -64,7 +116,7 @@ void draw_rectangle(const Rectangle& rect, int color) {
 
   for (int i = rx; i < rx + rw; i++) {
     for (int j = ry; j < ry + rh; j++) {
-      lcd_draw_pixel(i, j, color);
+      draw_pixel_masked(i, j, color);
     }
   }
 }
@@ -80,7 +132,7 @@ void draw_rectangle_checkerboard(int posX, int posY, int width, int height) {
   for (int i = posX; i < posX + width; i++) {
     for (int j = posY; j < posY + height; j++) {
       if ((i + j) & 1) {
-        lcd_draw_pixel(i, j, 0);
+        draw_pixel_masked(i, j, 0);
       }
     }
   }
@@ -96,22 +148,22 @@ void draw_rectangle_lines(int posX, int posY, int width, int height, int color) 
 
   // Draw top horizontal line
   for (int x = posX; x < posX + width; x++) {
-    lcd_draw_pixel(x, posY, color);
+    draw_pixel_masked(x, posY, color);
   }
 
   // Draw bottom horizontal line
   for (int x = posX; x < posX + width; x++) {
-    lcd_draw_pixel(x, posY + height - 1, color);
+    draw_pixel_masked(x, posY + height - 1, color);
   }
 
   // Draw left vertical line
   for (int y = posY; y < posY + height; y++) {
-    lcd_draw_pixel(posX, y, color);
+    draw_pixel_masked(posX, y, color);
   }
 
   // Draw right vertical line
   for (int y = posY; y < posY + height; y++) {
-    lcd_draw_pixel(posX + width - 1, y, color);
+    draw_pixel_masked(posX + width - 1, y, color);
   }
 }
 
@@ -135,19 +187,19 @@ void draw_rectangle_lines_pattern(const Rectangle& rect, uint8_t pattern_size, u
   };
 
   for (int x = rx; x < rx + rw; x++) {
-    lcd_draw_pixel(x, ry, get_color());
+    draw_pixel_masked(x, ry, get_color());
   }
 
   for (int y = ry; y < ry + rh; y++) {
-    lcd_draw_pixel(rx + rw - 1, y, get_color());
+    draw_pixel_masked(rx + rw - 1, y, get_color());
   }
 
   for (int x = rx + rw - 1; x >= rx; x--) {
-    lcd_draw_pixel(x, ry + rh - 1, get_color());
+    draw_pixel_masked(x, ry + rh - 1, get_color());
   }
 
   for (int y = ry + rh - 1; y >= ry; y--) {
-    lcd_draw_pixel(rx, y, get_color());
+    draw_pixel_masked(rx, y, get_color());
   }
 }
 
@@ -164,7 +216,7 @@ void draw_line(int x0, int y0, int x1, int y1, int color) {
   int err = (dx > dy ? dx : -dy) / 2, e2;
 
   for (;;) {
-    lcd_draw_pixel(x0, y0, color);
+    draw_pixel_masked(x0, y0, color);
     if (x0 == x1 && y0 == y1) break;
     e2 = err;
     if (e2 > -dx) {
@@ -192,7 +244,7 @@ int draw_line_pattern(int x0, int y0, int x1, int y1, int pattern_state, uint8_t
 
   for (;;) {
     int color = (pattern >> (7 - (pattern_state++ % pattern_size))) & 1;
-    lcd_draw_pixel(x0, y0, color);
+    draw_pixel_masked(x0, y0, color);
     if (x0 == x1 && y0 == y1) break;
     e2 = err;
     if (e2 > -dx) {
@@ -219,27 +271,22 @@ void draw_char(int draw_x, int draw_y, int scale, uint8_t char_code, int color) 
 
   const uint8_t* char_data = charMap[index];
 
-  for (int col = 0; col < FONT_CHAR_WIDTH; ++col) {
-    uint8_t column_byte = char_data[col];
+  int width_source = FONT_CHAR_WIDTH * scale;
+  int width_destination = round(width_source * g_scale);
 
-    for (int row = 0; row < FONT_CHAR_HEIGHT; ++row) {
-      if (column_byte & (1 << row)) {
+  int height_source = FONT_CHAR_HEIGHT * scale;
+  int height_destination = round(height_source * g_scale);
 
-        int px_x = draw_x + col * scale;
-        int px_y = draw_y + row * scale;
+  int x_destination = (draw_x - CENTER_X) * g_scale + CENTER_X;
+  int y_destination = (draw_y - CENTER_Y) * g_scale + CENTER_Y;
 
-        // Scale the pixel block
-        for (int i = 0; i < scale; ++i) {
-          for (int j = 0; j < scale; ++j) {
-            int final_x = px_x + i;
-            int final_y = px_y + j;
-
-            // Bounds check
-            if (final_x >= 0 && final_x < LCD_WIDTH && final_y >= 0 && final_y < LCD_HEIGHT) {
-              lcd_draw_pixel(final_x, final_y, color);
-            }
-          }
-        }
+  for (int col = 0; col < width_destination; col++) {
+    int source_col = col / g_scale / scale;
+    uint8_t column_byte = char_data[source_col];
+    for (int row = 0; row < height_destination; row++) {
+      int source_row = row / g_scale / scale;
+      if (column_byte & (1 << source_row)) {
+        draw_pixel_masked(x_destination + col, y_destination + row, color);
       }
     }
   }

@@ -134,10 +134,10 @@ void GameScreen::draw() const {
   fill_scrfeen_buffer(1);
 
   begin_scale(current_zoom_);
-  draw_tetramino(active_tetramino_);
-  draw_tetramino(sliding_tetramino_);
   draw_trajectory();
   draw_boundaries();
+  draw_tetramino(active_tetramino_);
+  draw_tetramino(sliding_tetramino_);
   tilemap_.draw();
   end_scale();
 
