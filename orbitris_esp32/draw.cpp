@@ -1,5 +1,6 @@
 #include "draw.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <cstdint>
@@ -329,4 +330,21 @@ void print_text(int x, int y, int scale, const char* text, int color) {
     draw_char(current_x, current_y, scale, current_char, color);
     current_x += scaled_char_width;
   }
+}
+
+Vector2 measure_text(const char* text, int scale) {
+  int lines = 1;
+  int columns = 0;
+  int current_line_columns = 0;
+  for (const char* p = text; *p != '\0'; ++p) {
+    current_line_columns++;
+    if (*p == '\n') {
+      lines++;
+      columns = std::max(columns, current_line_columns);
+      current_line_columns = 0;
+    }
+  }
+
+  return { (float)columns * scale * FONT_CHAR_WIDTH,
+           (float)lines * scale * FONT_CHAR_HEIGHT };
 }

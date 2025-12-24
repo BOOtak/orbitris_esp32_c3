@@ -31,3 +31,7 @@ Vector2 vector2_lerp(const Vector2& v1, const Vector2& v2, float amount);
 Vector2 vector2_add(const Vector2& v1, const Vector2& v2);
 
 Vector2 vector2_scale(const Vector2& v, float scale);
+
+float vector2_square_dist(const Vector2& v1, const Vector2& v2);
+
+float vector2_dist(const Vector2& v1, const Vector2& v2);

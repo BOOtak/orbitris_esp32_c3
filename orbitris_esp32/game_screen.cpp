@@ -37,11 +37,15 @@ constexpr auto trajectory_size = 50;
 constexpr float PROGRESS_SPEED = 0.05f;
 constexpr float DIST_THRESHOLD = 0.0001f;
 
+constexpr float MAX_PIECE_DISTANCE_SQUARE = LCD_HEIGHT * LCD_HEIGHT * 4;
+
 constexpr Vector2 NEXT_TETRAMINO_POS = { 80, 20 };
 
 const uint8_t patterns[] = { 0x00, 0x11, 0x24, 0x55, 0xd8, 0xee, 0xf0, 0xf8 };
 const uint8_t pattern_sizes[] = { 8, 8, 6, 8, 6, 8, 5, 6 };
 constexpr auto patterns_count = std::size(patterns);
+
+const char* status_text_heres_your_piece = "Here's your piece\nDon't lose it again!";
 
 GameScreen::GameScreen(Stats& stats)
   : Screen(), stats_{ stats } {}
@@ -94,6 +98,8 @@ Screen* GameScreen::update() {
 
   update_sliding_tetramino(sliding_tetramino_);
 
+  detect_piece_too_far(active_tetramino_);
+
   if (is_key_down(ESP_KEY_UP)) {
     planet_state_.angle.speed += 1.0E-9f;
   }
@@ -130,6 +136,10 @@ Screen* GameScreen::update() {
     target_zoom_ = 1.0f;
   }
 
+  if (status_text_frame_ < STATUS_TEXT_FRAMES) {
+    status_text_frame_++;
+  }
+
   return this;
 }
 
@@ -149,6 +159,13 @@ void GameScreen::draw() const {
   snprintf(score_buf, buf_size, "Score: %d\n", tilemap_.game_points);
   print_text(280, 10, 2, score_buf, 0);
   print_text(10, 10, 2, "Next:", 0);
+
+  if (status_text_frame_ < STATUS_TEXT_FRAMES) {
+    constexpr int text_y_offset = 10;
+    Vector2 text_size = measure_text(status_text_, 2);
+    print_text(LCD_WIDTH / 2 - text_size.x / 2,
+               LCD_HEIGHT - text_size.y - text_y_offset, 2, status_text_, 0);
+  }
   draw_tetramino(next_tetramino_);
 }
 
@@ -259,6 +276,14 @@ void GameScreen::update_sliding_tetramino(ActiveTetramino& block) {
   trace("Move to (%f %f)\n", newCenterPos.x, newCenterPos.y);
   block.oldPos = block.pos;
   block.progress = 0.0f;
+}
+
+void GameScreen::detect_piece_too_far(const ActiveTetramino& block) {
+  if (vector2_square_dist(block.pos, star_pos_) > MAX_PIECE_DISTANCE_SQUARE) {
+    reset_planet_state();
+    status_text_frame_ = 0;
+    status_text_ = status_text_heres_your_piece;
+  }
 }
 
 void GameScreen::draw_trajectory() const {

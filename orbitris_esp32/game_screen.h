@@ -10,6 +10,8 @@
 #include "tetramino.h"
 #include "tilemap.h"
 
+constexpr int STATUS_TEXT_FRAMES = 120;
+
 class GameScreen : public Screen {
 public:
   GameScreen(Stats& stats);
@@ -33,12 +35,15 @@ private:
   float delta_time_;
   float current_zoom_;
   float target_zoom_;
+  int status_text_frame_{ STATUS_TEXT_FRAMES };
+  const char* status_text_{};
 
   int get_resolution(const PlanetState& planet);
 
   void reset_planet_state();
   void generate_next_tetramino();
   void update_sliding_tetramino(ActiveTetramino& block);
+  void detect_piece_too_far(const ActiveTetramino& block);
 
   void draw_trajectory() const;
   void draw_boundaries() const;
