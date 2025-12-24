@@ -111,6 +111,9 @@ Screen* GameScreen::update() {
     return screens::game_over_screen;
   }
 
+  // update stats
+  stats_.game_points = tilemap_.game_points;
+
   // prepare for draw
   float diff = current_zoom_ - target_zoom_;
   if (fabs(diff) > ZOOM_SPEED) {
@@ -150,7 +153,6 @@ void GameScreen::draw() const {
 }
 
 void GameScreen::close() {
-  stats_.game_points = tilemap_.game_points;
 }
 
 /**
