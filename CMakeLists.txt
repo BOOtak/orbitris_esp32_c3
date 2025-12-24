@@ -29,6 +29,7 @@ add_executable(${PROJECT_NAME}
     orbitris_esp32/table_math.cpp
     orbitris_esp32/tetramino.cpp
     orbitris_esp32/tilemap.cpp
+    orbitris_esp32/transition.cpp
     )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
