@@ -7,7 +7,12 @@ enum class TransitionKind {
   ZOOM_OUT
 };
 
-void start_transition(Screen* from, Screen* to, TransitionKind kind);
+struct TransitionParams {
+  TransitionKind kind;
+  float speed;
+};
+
+void start_transition(Screen* from, Screen* to, TransitionParams params);
 
 /**
  * @brief Update transition state.

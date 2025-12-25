@@ -16,36 +16,36 @@ Screen* new_screen = nullptr;
 struct TransitionRule {
   Screen*& from;
   Screen*& to;
-  TransitionKind kind;
+  TransitionParams params;
 };
 
+TransitionParams default_params = { TransitionKind::ZOOM_IN, 1.0f / 25 };
+
 TransitionRule rules[]{
-  { screens::game_screen, screens::game_over_screen, TransitionKind::ZOOM_OUT },
-  { screens::game_over_screen, screens::game_screen, TransitionKind::ZOOM_IN }
+  { screens::game_screen, screens::game_over_screen, { TransitionKind::ZOOM_OUT, 1.0f / 60 } },
+  { screens::game_over_screen, screens::game_screen, { TransitionKind::ZOOM_IN, 1.0f / 25 } }
 };
 
 Stats stats{};
 
 static bool in_transition = false;
 
-static TransitionKind find_transition_rule(Screen* from, Screen* to) {
-  constexpr TransitionKind default_rule = TransitionKind::ZOOM_IN;
-
+static TransitionParams find_transition_params(Screen* from, Screen* to) {
   // Linear complexity, whatever
   for (size_t i = 0; i < std::size(rules); i++) {
     if (rules[i].from == from && rules[i].to == to) {
-      return rules[i].kind;
+      return rules[i].params;
     }
   }
 
-  return default_rule;
+  return default_params;
 }
 
 void update_screen() {
   new_screen = current_screen->update();
   if (new_screen != current_screen) {
     in_transition = true;
-    start_transition(current_screen, new_screen, find_transition_rule(current_screen, new_screen));
+    start_transition(current_screen, new_screen, find_transition_params(current_screen, new_screen));
   }
 }
 

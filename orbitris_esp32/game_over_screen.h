@@ -2,6 +2,7 @@
 
 #include "screen.h"
 #include "stats.h"
+#include "game_utils.h"
 
 constexpr auto bufsize = 100;
 
@@ -17,5 +18,6 @@ public:
 
 private:
   const Stats& stats_;
+  Vector2 text_size_;
   char score_buffer_[bufsize];
 };

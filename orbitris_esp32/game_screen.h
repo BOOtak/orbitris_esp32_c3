@@ -12,6 +12,12 @@
 
 constexpr int STATUS_TEXT_FRAMES = 120;
 
+struct ExplodingTile {
+  Vector2 pos;
+  Vector2 speed;
+  bool occupied;
+};
+
 class GameScreen : public Screen {
 public:
   GameScreen(Stats& stats);
@@ -27,6 +33,7 @@ public:
 private:
   Stats& stats_;
   Tilemap tilemap_{};
+  ExplodingTile explosion_[TILES_X][TILES_Y]{};
   ActiveTetramino active_tetramino_;
   ActiveTetramino next_tetramino_;
   ActiveTetramino sliding_tetramino_;

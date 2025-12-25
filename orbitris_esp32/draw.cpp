@@ -307,6 +307,8 @@ void draw_char(int draw_x, int draw_y, int scale, uint8_t char_code, int color) 
 void print_text(int x, int y, int scale, const char* text, int color) {
   if (scale < 1) return;
 
+  const int scaled_char_dist = scale;
+
   const int scaled_char_width = FONT_CHAR_WIDTH * scale;
   const int scaled_char_height = FONT_CHAR_HEIGHT * scale;
 
@@ -328,7 +330,7 @@ void print_text(int x, int y, int scale, const char* text, int color) {
     }
 
     draw_char(current_x, current_y, scale, current_char, color);
-    current_x += scaled_char_width;
+    current_x += scaled_char_width + scaled_char_dist;
   }
 }
 
@@ -345,6 +347,6 @@ Vector2 measure_text(const char* text, int scale) {
     }
   }
 
-  return { (float)columns * scale * FONT_CHAR_WIDTH,
+  return { (float)columns * scale * (FONT_CHAR_WIDTH + 1),
            (float)lines * scale * FONT_CHAR_HEIGHT };
 }

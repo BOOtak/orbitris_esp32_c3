@@ -57,6 +57,7 @@ void GameScreen::init() {
   active_tetramino_ = {};
   next_tetramino_ = { 0, NEXT_TETRAMINO_POS, nullptr };
   sliding_tetramino_ = {};
+  std::memset(explosion_, 0, sizeof(explosion_));
 
   generate_next_tetramino();
 
