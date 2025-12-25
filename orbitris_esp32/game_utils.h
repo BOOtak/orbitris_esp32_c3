@@ -7,6 +7,23 @@ struct Vector2 {
   float y;
 };
 
+inline Vector2 operator+(const Vector2& v1, const Vector2& v2) {
+  return { v1.x + v2.x, v1.y + v2.y };
+}
+
+inline Vector2 operator*(const Vector2& v, float scale) {
+  return { v.x * scale, v.y * scale };
+}
+
+inline Vector2 operator-(const Vector2& v1, const Vector2& v2) {
+  return { v1.x - v2.x, v1.y - v2.y };
+}
+
+inline void operator+=(Vector2& v1, const Vector2& v2) {
+  v1.x += v2.x;
+  v1.y += v2.y;
+}
+
 struct Rectangle {
   float x;       // Rectangle top-left corner position x
   float y;       // Rectangle top-left corner position y
@@ -27,10 +44,6 @@ Rectangle get_collision_rec(const Rectangle& rec1, const Rectangle& rec2);
 int get_random_value(int min, int max);
 
 Vector2 vector2_lerp(const Vector2& v1, const Vector2& v2, float amount);
-
-Vector2 vector2_add(const Vector2& v1, const Vector2& v2);
-
-Vector2 vector2_scale(const Vector2& v, float scale);
 
 float vector2_square_dist(const Vector2& v1, const Vector2& v2);
 

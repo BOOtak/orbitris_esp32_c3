@@ -97,11 +97,3 @@ float vector2_square_dist(const Vector2& v1, const Vector2& v2) {
 float vector2_dist(const Vector2& v1, const Vector2& v2) {
   return sqrt(vector2_square_dist(v1, v2));
 }
-
-Vector2 vector2_add(const Vector2& v1, const Vector2& v2) {
-  return { v1.x + v2.x, v1.y + v2.y };
-}
-
-Vector2 vector2_scale(const Vector2& v, float scale) {
-  return { v.x * scale, v.y * scale };
-}

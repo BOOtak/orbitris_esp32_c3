@@ -293,7 +293,7 @@ void GameScreen::update_sliding_tetramino(ActiveTetramino& block) {
   int ix = 0, iy = 0;
   tilemap_.get_tetramino_tilemap_pos_corner(block, ix, iy);
   Vector2 newCornerPos = tilemap_.get_tile_pos(ix + dirX, iy + dirY);
-  Vector2 newCenterPos = vector2_add(newCornerPos, vector2_scale(block.block->center, TILE_W));
+  Vector2 newCenterPos = newCornerPos + block.block->center * TILE_W;
   block.targetPos = newCenterPos;
   trace("Move to (%f %f)\n", newCenterPos.x, newCenterPos.y);
   block.oldPos = block.pos;
