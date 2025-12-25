@@ -81,6 +81,13 @@ Screen* GameScreen::update() {
 
     if (collision.width > 0 && collision.height > 0) {
       break;
+    } else if (vector2_square_dist(active_tetramino_.pos, star_pos_) < ((TILE_W * TILE_W) / 4)) {
+      trace("Found new center!\n");
+      tilemap_.place_tetramino(active_tetramino_);
+      reset_planet_state();
+      generate_next_tetramino();
+      active_tetramino_.pos = state_to_coords(planet_state_, DIST_SCALE, star_pos_);
+      break;
     }
   }
 
