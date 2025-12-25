@@ -7,7 +7,7 @@ float remap(float value, float inputStart, float inputEnd, float outputStart, fl
   return (value - inputStart) / (inputEnd - inputStart) * (outputEnd - outputStart) + outputStart;
 }
 
-float lerp(float start, float end, float amount) {
+float my_lerp(float start, float end, float amount) {
   return start + amount * (end - start);
 }
 

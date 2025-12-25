@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 void lcd_init();
 
 /**
@@ -27,3 +29,5 @@ void lcd_draw_pixel(int x, int y, int color);
  * @param color The color to fill (0 or 1).
  */
 void lcd_fill_buffer(int color);
+
+void lcd_fill_line(int line, uint8_t pattern, int color);

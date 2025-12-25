@@ -2,8 +2,9 @@
 
 #include <algorithm>
 #include <array>
-#include <cstddef>
 #include <cmath>
+#include <cstddef>
+#include <cstring>
 
 #include "draw.h"
 #include "input.h"

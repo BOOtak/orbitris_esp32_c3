@@ -111,6 +111,19 @@ void lcd_fill_buffer(int color) {
   }
 }
 
+void lcd_fill_line(int line, uint8_t pattern, int color) {
+  int byte_index = (line * LINE_LENGTH) + LINE_PREFIX_LENGTH;
+  if (color == 1) {  // white
+    for (int x = 0; x < BYTES_PER_LINE; x++) {
+      framebuffer[byte_index + x] |= pattern;
+    }
+  } else {
+    for (int x = 0; x < BYTES_PER_LINE; x++) {
+      framebuffer[byte_index + x] &= ~pattern;
+    }
+  }
+}
+
 void lcd_draw_pixel(int x, int y, int color) {
   if (x < 0 || x >= LCD_WIDTH || y < 0 || y >= LCD_HEIGHT) return;
 

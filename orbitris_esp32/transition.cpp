@@ -87,8 +87,8 @@ static void draw_tarnsition_zoom_in() {
   constexpr float zoom_start_new = 0.2f;
 
   float ease_progress = ease_out_cubic(transition_progress);
-  float zoom_old = lerp(1.0f, zoom_end_old, ease_progress);
-  float zoom_new = lerp(zoom_start_new, 1.0f, ease_progress);
+  float zoom_old = my_lerp(1.0f, zoom_end_old, ease_progress);
+  float zoom_new = my_lerp(zoom_start_new, 1.0f, ease_progress);
 
   int mask_index = (int)remap(ease_progress, 0.0f, 1.0f, 0.0f, MASKS_COUNT - 1);
   DrawMask new_mask = MASKS[mask_index];
@@ -111,8 +111,8 @@ static void draw_tarnsition_zoom_out() {
   constexpr float zoom_start_new = 3.0f;
 
   float ease_progress = ease_out_cubic(transition_progress);
-  float zoom_old = lerp(1.0f, zoom_end_old, ease_progress);
-  float zoom_new = lerp(zoom_start_new, 1.0f, ease_progress);
+  float zoom_old = my_lerp(1.0f, zoom_end_old, ease_progress);
+  float zoom_new = my_lerp(zoom_start_new, 1.0f, ease_progress);
 
   int mask_index = (int)remap(ease_progress, 0.0f, 1.0f, 0.0f, MASKS_COUNT - 1);
   DrawMask new_mask = MASKS[mask_index];

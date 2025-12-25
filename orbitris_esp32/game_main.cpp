@@ -1,6 +1,6 @@
 #include "game_main.h"
 
-#include <algorithm>
+#include <array>
 
 #include "game_screen.h"
 #include "game_over_screen.h"
