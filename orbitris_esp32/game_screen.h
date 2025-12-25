@@ -12,12 +12,6 @@
 
 constexpr int STATUS_TEXT_FRAMES = 120;
 
-struct ExplodingTile {
-  Vector2 pos;
-  Vector2 speed;
-  bool occupied;
-};
-
 class GameScreen : public Screen {
 public:
   GameScreen(Stats& stats);
@@ -33,7 +27,6 @@ public:
 private:
   Stats& stats_;
   Tilemap tilemap_{};
-  ExplodingTile explosion_[TILES_X][TILES_Y]{};
   ActiveTetramino active_tetramino_;
   ActiveTetramino next_tetramino_;
   ActiveTetramino sliding_tetramino_;
@@ -43,6 +36,7 @@ private:
   float current_zoom_;
   float target_zoom_;
   int status_text_frame_{ STATUS_TEXT_FRAMES };
+  bool is_exploding_{};
   const char* status_text_{};
 
   int get_resolution(const PlanetState& planet);

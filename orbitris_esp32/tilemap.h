@@ -66,6 +66,8 @@ public:
    */
   Vector2 get_tile_pos(int ix, int iy) const;
 
+  bool is_blank(int ix, int iy) const;
+
 private:
   Tile tilemap_[TILES_Y][TILES_X]{};
   TileDeleteInfo tile_delete_info_{};

@@ -4,9 +4,9 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
-#include <cstring>
 
 #include "draw.h"
+#include "explosion.h"
 #include "input.h"
 #include "table_math.h"
 #include "trace.h"
@@ -57,7 +57,7 @@ void GameScreen::init() {
   active_tetramino_ = {};
   next_tetramino_ = { 0, NEXT_TETRAMINO_POS, nullptr };
   sliding_tetramino_ = {};
-  std::memset(explosion_, 0, sizeof(explosion_));
+  is_exploding_ = false;
 
   generate_next_tetramino();
 
@@ -126,6 +126,15 @@ Screen* GameScreen::update() {
     return screens::game_over_screen;
   }
 
+  if (is_key_pressed(ESP_KEY_B)) {
+    init_explosion(tilemap_, star_pos_);
+    is_exploding_ = true;
+  }
+
+  if (is_exploding_) {
+    update_explosion();
+  }
+
   // update stats
   stats_.game_points = tilemap_.game_points;
 
@@ -160,7 +169,11 @@ void GameScreen::draw() const {
   draw_boundaries();
   draw_tetramino(active_tetramino_);
   draw_tetramino(sliding_tetramino_);
-  tilemap_.draw();
+  if (is_exploding_) {
+    draw_explosion();
+  } else {
+    tilemap_.draw();
+  }
   end_scale();
 
   constexpr auto buf_size = 100;

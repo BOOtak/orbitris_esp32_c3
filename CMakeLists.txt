@@ -20,6 +20,7 @@ add_executable(${PROJECT_NAME}
     raylib_adapter/trace_printf.cpp
 
     orbitris_esp32/draw.cpp
+    orbitris_esp32/explosion.cpp
     orbitris_esp32/game_main.cpp
     orbitris_esp32/game_over_screen.cpp
     orbitris_esp32/game_screen.cpp

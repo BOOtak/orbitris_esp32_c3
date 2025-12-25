@@ -27,11 +27,13 @@ void Tilemap::init() {
   tile_out_of_bounds = false;
 
   std::memset(tilemap_, 0, sizeof(tilemap_));
-  tilemap_[TILES_X / 2 - 1][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[TILES_X / 2 - 1][TILES_Y / 2].occupied = true;
-  tilemap_[TILES_X / 2][TILES_Y / 2 - 1].occupied = true;
-  tilemap_[TILES_X / 2][TILES_Y / 2].occupied = true;
-
+  constexpr int filled_rows = 4;
+  constexpr int offset = TILES_X / 2 - filled_rows / 2;
+  for (size_t x = offset; x < offset + filled_rows; x++) {
+    for (size_t y = offset; y < offset + filled_rows; y++) {
+      tilemap_[x][y].occupied = true;
+    }
+  }
 
   tile_delete_info_ = {};
 }
@@ -277,6 +279,10 @@ Vector2 Tilemap::get_tile_pos(int ix, int iy) const {
   result.x = ix * TILE_W + CENTER_X - (TILE_W * TILES_X / 2);
   result.y = iy * TILE_H + CENTER_Y - (TILE_H * TILES_Y / 2);
   return result;
+}
+
+bool Tilemap::is_blank(int ix, int iy) const {
+  return is_blank(tilemap_[ix][iy]);
 }
 
 void Tilemap::get_tetramino_tilemap_pos(const ActiveTetramino& block, int (*coords)[2] /* int[4][2] */) const {
