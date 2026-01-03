@@ -9,10 +9,6 @@
 #include "charmap.h"
 #include "const.h"
 
-constexpr int FONT_CHAR_WIDTH = 5;
-constexpr int FONT_CHAR_HEIGHT = 8;
-constexpr int FONT_START_CHAR = 0x20;
-constexpr int FONT_END_CHAR = 0x7E;
 constexpr int FONT_MAP_SIZE = FONT_END_CHAR - FONT_START_CHAR + 1;
 
 constexpr float SCALE_EPSILON = 0.01f;
@@ -270,7 +266,7 @@ void draw_char(int draw_x, int draw_y, int scale, uint8_t char_code, int color) 
     index = 0;
   }
 
-  const uint8_t* char_data = charMap[index];
+  const uint8_t* char_data = charmap[index];
 
   // Use fixed-point arithmetics (16.16)
   // TODO: use struct/unions?
@@ -307,8 +303,6 @@ void draw_char(int draw_x, int draw_y, int scale, uint8_t char_code, int color) 
 void print_text(int x, int y, int scale, const char* text, int color) {
   if (scale < 1) return;
 
-  const int scaled_char_dist = scale;
-
   const int scaled_char_width = FONT_CHAR_WIDTH * scale;
   const int scaled_char_height = FONT_CHAR_HEIGHT * scale;
 
@@ -330,7 +324,7 @@ void print_text(int x, int y, int scale, const char* text, int color) {
     }
 
     draw_char(current_x, current_y, scale, current_char, color);
-    current_x += scaled_char_width + scaled_char_dist;
+    current_x += scaled_char_width;
   }
 }
 
