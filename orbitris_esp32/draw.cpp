@@ -341,6 +341,8 @@ Vector2 measure_text(const char* text, int scale) {
     }
   }
 
-  return { (float)columns * scale * (FONT_CHAR_WIDTH + 1),
+  columns = std::max(columns, current_line_columns);
+
+  return { (float)columns * scale * (FONT_CHAR_WIDTH),
            (float)lines * scale * FONT_CHAR_HEIGHT };
 }
