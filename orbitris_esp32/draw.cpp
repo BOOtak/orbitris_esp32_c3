@@ -271,24 +271,35 @@ void draw_char(int draw_x, int draw_y, int scale, uint8_t char_code, int color) 
 
   const uint8_t* char_data = charMap[index];
 
-  int width_source = FONT_CHAR_WIDTH * scale;
-  int width_destination = round(width_source * g_scale);
+  // Use fixed-point arithmetics (16.16)
+  // TODO: use struct/unions?
+  int32_t g_scale_fp = (int32_t)(g_scale * 65536);
+  int total_scale = scale * g_scale_fp;
 
-  int height_source = FONT_CHAR_HEIGHT * scale;
-  int height_destination = round(height_source * g_scale);
+  int x_destination = (((draw_x - CENTER_X) * g_scale_fp) >> 16) + CENTER_X;
+  int y_destination = (((draw_y - CENTER_Y) * g_scale_fp) >> 16) + CENTER_Y;
 
-  int x_destination = (draw_x - CENTER_X) * g_scale + CENTER_X;
-  int y_destination = (draw_y - CENTER_Y) * g_scale + CENTER_Y;
+  int width_destination = (FONT_CHAR_WIDTH * total_scale) >> 16;
+  int height_destination = (FONT_CHAR_HEIGHT * total_scale) >> 16;
 
+  int32_t source_step_fp = (1 << 16) / scale;
+  source_step_fp = ((int64_t)source_step_fp << 16) / g_scale_fp;
+
+  int32_t source_col_fp = 0;
   for (int col = 0; col < width_destination; col++) {
-    int source_col = col / g_scale / scale;
+    int source_col = source_col_fp >> 16;
     uint8_t column_byte = char_data[source_col];
+
+    int32_t source_row_fp = 0;
     for (int row = 0; row < height_destination; row++) {
-      int source_row = row / g_scale / scale;
+      int source_row = source_row_fp >> 16;
+
       if (column_byte & (1 << source_row)) {
         draw_pixel_masked(x_destination + col, y_destination + row, color);
       }
+      source_row_fp += source_step_fp;
     }
+    source_col_fp += source_step_fp;
   }
 }
 
