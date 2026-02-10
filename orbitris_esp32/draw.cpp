@@ -282,21 +282,19 @@ void draw_char(int draw_x, int draw_y, int scale, uint8_t char_code, int color) 
   int32_t source_step_fp = (1 << 16) / scale;
   source_step_fp = ((int64_t)source_step_fp << 16) / g_scale_fp;
 
-  int32_t source_col_fp = 0;
-  for (int col = 0; col < width_destination; col++) {
-    int source_col = source_col_fp >> 16;
-    uint8_t column_byte = char_data[source_col];
-
-    int32_t source_row_fp = 0;
-    for (int row = 0; row < height_destination; row++) {
-      int source_row = source_row_fp >> 16;
-
-      if (column_byte & (1 << source_row)) {
+  int32_t source_row_fp = 0;
+  for (int row = 0; row < height_destination; row++) {
+    int source_row = source_row_fp >> 16;
+    uint8_t row_byte = char_data[source_row];
+    int32_t source_col_fp = 0;
+    for (int col = 0; col < width_destination; col++) {
+      int source_col = source_col_fp >> 16;
+      if (row_byte & (0x80 >> source_col)) {
         draw_pixel_masked(x_destination + col, y_destination + row, color);
       }
-      source_row_fp += source_step_fp;
+      source_col_fp += source_step_fp;
     }
-    source_col_fp += source_step_fp;
+    source_row_fp += source_step_fp;
   }
 }
 
