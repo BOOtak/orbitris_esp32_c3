@@ -37,28 +37,30 @@ bool is_key_down(int key) {
   return !digitalRead(key);
 }
 
-bool is_key_pressed(int key) {
-  int idx = 0;
+static int get_index(int key) {
   switch (key) {
     case ESP_KEY_UP:
-      idx = IDX_UP;
-      break;
+      return IDX_UP;
     case ESP_KEY_DOWN:
-      idx = IDX_DOWN;
-      break;
+      return IDX_DOWN;
     case ESP_KEY_LEFT:
-      idx = IDX_LEFT;
-      break;
+      return IDX_LEFT;
     case ESP_KEY_RIGHT:
-      idx = IDX_RIGHT;
-      break;
+      return IDX_RIGHT;
     case ESP_KEY_A:
-      idx = IDX_A;
-      break;
+      return IDX_A;
     case ESP_KEY_B:
-      idx = IDX_B;
-      break;
+      return IDX_B;
   }
+  return 0;
+}
 
+bool is_key_pressed(int key) {
+  int idx = get_index(int key);
   return btn_states[idx] && !btn_states_prev[idx];
+}
+
+bool is_key_released(int key) {
+  int idx = get_index(int key);
+  return !btn_states[idx] && btn_states_prev[idx];
 }

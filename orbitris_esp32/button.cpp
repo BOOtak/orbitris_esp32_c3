@@ -32,7 +32,7 @@ void Button::draw() const {
       draw_rectangle_checkerboard(x + 1, y + 1, w - 2, h - 2);
       break;
     case ButtonState::pressed:
-      draw_rectangle_lines(x, y, w, h, LCD_BLACK);
+      draw_rectangle_checkerboard(x + 3, y + 3, w - 6, h - 6);
       break;
   }
 

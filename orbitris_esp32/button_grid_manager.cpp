@@ -84,16 +84,18 @@ int ButtonGridManager::update() {
     int index = grid_map_[focused_grid_row_ * cols_ + focused_grid_col_];
 
     if (index != BUTTON_NO_ACTION && index < count_) {
-      // TODO: ???????
-      // Set visual state to pressed
       all_buttons_[index].set_state(ButtonState::pressed);
-
-      // Store the ID to be returned
-      action_id = all_buttons_[index].get_id();
-
-      // Immediately revert to focused state
-      all_buttons_[index].set_state(ButtonState::focused);
     }
+  }
+
+  if (is_key_released(ESP_KEY_A)) {
+    int index = grid_map_[focused_grid_row_ * cols_ + focused_grid_col_];
+
+    // Store the ID to be returned
+    action_id = all_buttons_[index].get_id();
+
+    // Revert to focused state
+    all_buttons_[index].set_state(ButtonState::focused);
   }
 
   if (anim_timer_ < ANIMATION_FRAMES) {
