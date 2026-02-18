@@ -56,11 +56,11 @@ static int get_index(int key) {
 }
 
 bool is_key_pressed(int key) {
-  int idx = get_index(int key);
+  int idx = get_index(key);
   return btn_states[idx] && !btn_states_prev[idx];
 }
 
 bool is_key_released(int key) {
-  int idx = get_index(int key);
+  int idx = get_index(key);
   return !btn_states[idx] && btn_states_prev[idx];
 }
