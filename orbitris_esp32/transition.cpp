@@ -1,8 +1,7 @@
 #include "transition.h"
 
-#include <math.h>
-
 #include "draw.h"
+#include "game_utils.h"
 
 constexpr DrawMask MASKS[] = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
                                { 0x88, 0x00, 0x00, 0x00, 0x88, 0x00, 0x00, 0x00 },
@@ -29,6 +28,8 @@ static void draw_tarnsition_zoom_out();
 
 static void draw_tarnsition_zoom_in();
 
+static void draw_transition_dissolve();
+
 static Screen* current_screen = nullptr;
 static Screen* next_screen = nullptr;
 
@@ -36,14 +37,6 @@ static float transition_progress = 0.0f;
 static TransitionParams transition_params;
 
 void (*draw_transition)();
-
-float ease_out_cubic(float x) {
-  return 1 - pow(1 - x, 3);
-}
-
-float ease_out_circ(float x) {
-  return sqrt(1 - (x - 1) * (x - 1));
-}
 
 void start_transition(Screen* from, Screen* to, TransitionParams params) {
   current_screen = from;
@@ -60,6 +53,9 @@ void start_transition(Screen* from, Screen* to, TransitionParams params) {
       break;
     case TransitionKind::ZOOM_OUT:
       draw_transition = draw_tarnsition_zoom_out;
+      break;
+    case TransitionKind::DISSOLVE:
+      draw_transition = draw_transition_dissolve;
       break;
     default:
       break;
@@ -80,6 +76,20 @@ bool update_transition() {
   }
 
   return false;
+}
+
+static void draw_transition_dissolve() {
+  float ease_progress = ease_out_cubic(transition_progress);
+  int mask_index = (int)remap(ease_progress, 0.0f, 1.0f, 0.0f, MASKS_COUNT - 1);
+  DrawMask new_mask = MASKS[mask_index];
+  DrawMask old_mask = ~new_mask;
+  begin_mask(old_mask);
+  current_screen->draw();
+  end_mask();
+  end_screen_scale();
+  begin_mask(new_mask);
+  next_screen->draw();
+  end_mask();
 }
 
 static void draw_tarnsition_zoom_in() {

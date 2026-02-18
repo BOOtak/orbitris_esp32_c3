@@ -19,6 +19,8 @@ add_executable(${PROJECT_NAME}
     raylib_adapter/lcd_raylib.cpp
     raylib_adapter/trace_printf.cpp
 
+    orbitris_esp32/button.cpp
+    orbitris_esp32/button_grid_manager.cpp
     orbitris_esp32/draw.cpp
     orbitris_esp32/explosion.cpp
     orbitris_esp32/game_main.cpp
@@ -26,6 +28,7 @@ add_executable(${PROJECT_NAME}
     orbitris_esp32/game_screen.cpp
     orbitris_esp32/game_utils.cpp
     orbitris_esp32/orbital.cpp
+    orbitris_esp32/menu_screen.cpp
     orbitris_esp32/screen.cpp
     orbitris_esp32/table_math.cpp
     orbitris_esp32/tetramino.cpp

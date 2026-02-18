@@ -4,7 +4,8 @@
 
 enum class TransitionKind {
   ZOOM_IN,
-  ZOOM_OUT
+  ZOOM_OUT,
+  DISSOLVE
 };
 
 struct TransitionParams {

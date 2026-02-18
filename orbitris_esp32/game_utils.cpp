@@ -97,3 +97,15 @@ float vector2_square_dist(const Vector2& v1, const Vector2& v2) {
 float vector2_dist(const Vector2& v1, const Vector2& v2) {
   return sqrt(vector2_square_dist(v1, v2));
 }
+
+float ease_out_cubic(float x) {
+  return 1 - pow(1 - x, 3);
+}
+
+float ease_out_quad(float x) {
+  return 1 - pow(1 - x, 4);
+}
+
+float ease_out_circ(float x) {
+  return sqrt(1 - (x - 1) * (x - 1));
+}

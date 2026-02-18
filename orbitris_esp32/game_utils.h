@@ -48,3 +48,9 @@ Vector2 vector2_lerp(const Vector2& v1, const Vector2& v2, float amount);
 float vector2_square_dist(const Vector2& v1, const Vector2& v2);
 
 float vector2_dist(const Vector2& v1, const Vector2& v2);
+
+float ease_out_cubic(float x);
+
+float ease_out_quad(float x);
+
+float ease_out_circ(float x);

@@ -5,6 +5,7 @@
 #include "game_screen.h"
 #include "game_over_screen.h"
 #include "game_utils.h"
+#include "menu_screen.h"
 #include "screen.h"
 #include "stats.h"
 #include "table_math.h"
@@ -58,8 +59,9 @@ void init_game() {
 
   screens::game_screen = new GameScreen(stats);
   screens::game_over_screen = new GameOverScreen(stats);
+  screens::menu_screen = new MenuScreen();
 
-  current_screen = screens::game_screen;
+  current_screen = screens::menu_screen;
   current_screen->init();
   in_transition = false;
 }
