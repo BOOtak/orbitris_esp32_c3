@@ -71,6 +71,21 @@ Rectangle get_collision_rec(const Rectangle& rec1, const Rectangle& rec2) {
   return rec;
 }
 
+float random_float() {
+  return rand() * 1.0f / RAND_MAX;
+}
+
+float get_random_value(float min, float max) {
+  if (min > max) {
+    int tmp = max;
+    max = min;
+    min = tmp;
+  }
+
+  float norm = random_float();
+  return norm * (max - min) + min;
+}
+
 int get_random_value(int min, int max) {
   if (min > max) {
     int tmp = max;

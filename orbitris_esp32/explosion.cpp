@@ -4,10 +4,12 @@
 
 #include "draw.h"
 #include "tilemap.h"
+#include "transition.h"
 
 struct ExplodingTile {
   Vector2 pos;
   Vector2 speed;
+  Vector2 initSpeed;
   bool occupied;
 };
 
@@ -22,7 +24,7 @@ void init_explosion(const Tilemap& map, const Vector2& center) {
         ExplodingTile& cell = explosion_[i][j];
         cell.occupied = true;
         cell.pos = map.get_tile_pos(i, j);
-        cell.speed = (cell.pos + tile_center_offset - center) * 0.3f;
+        cell.initSpeed = cell.speed = (cell.pos + tile_center_offset - center) * get_random_value(0.2f, 0.4f);
       }
     }
   }
@@ -33,6 +35,7 @@ bool update_explosion() {
     for (size_t j = 0; j < TILES_Y; j++) {
       if (explosion_[i][j].occupied) {
         explosion_[i][j].pos += explosion_[i][j].speed;
+        explosion_[i][j].speed *= 0.98f;
       }
     }
   }
@@ -43,9 +46,13 @@ bool update_explosion() {
 void draw_explosion() {
   for (size_t i = 0; i < TILES_X; i++) {
     for (size_t j = 0; j < TILES_Y; j++) {
-      if (explosion_[i][j].occupied) {
+      const auto& cell = explosion_[i][j];
+      if (cell.occupied) {
+        size_t mask_index = remap(cell.speed.x, 0.0f, cell.initSpeed.x, 0.0f, get_masks_count() - 1);
         const Vector2& pos = explosion_[i][j].pos;
+        begin_mask(get_mask(mask_index));
         draw_tile(pos.x, pos.y, TILE_W);
+        end_mask();
       }
     }
   }

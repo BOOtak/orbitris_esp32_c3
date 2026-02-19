@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cstddef>
+
 #include "screen.h"
+#include "draw.h"
 
 enum class TransitionKind {
   ZOOM_IN,
@@ -12,6 +15,11 @@ struct TransitionParams {
   TransitionKind kind;
   float speed;
 };
+
+size_t get_masks_count();
+
+DrawMask get_mask(size_t index);
+
 
 void start_transition(Screen* from, Screen* to, TransitionParams params);
 

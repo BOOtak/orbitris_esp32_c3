@@ -38,6 +38,14 @@ static TransitionParams transition_params;
 
 void (*draw_transition)();
 
+size_t get_masks_count() {
+  return MASKS_COUNT;
+}
+
+DrawMask get_mask(size_t index) {
+  return MASKS[index];
+}
+
 void start_transition(Screen* from, Screen* to, TransitionParams params) {
   current_screen = from;
   next_screen = to;

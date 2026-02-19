@@ -15,6 +15,11 @@ inline Vector2 operator*(const Vector2& v, float scale) {
   return { v.x * scale, v.y * scale };
 }
 
+inline void operator*=(Vector2& v, float scale) {
+  v.x *= scale;
+  v.y *= scale;
+}
+
 inline Vector2 operator-(const Vector2& v1, const Vector2& v2) {
   return { v1.x - v2.x, v1.y - v2.y };
 }
@@ -42,6 +47,8 @@ Rectangle get_collision_rec(const Rectangle& rec1, const Rectangle& rec2);
 
 // Get a random value between min and max (both included)
 int get_random_value(int min, int max);
+
+float get_random_value(float min, float max);
 
 Vector2 vector2_lerp(const Vector2& v1, const Vector2& v2, float amount);
 
