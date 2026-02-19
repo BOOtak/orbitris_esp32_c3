@@ -6,7 +6,7 @@
 #include "tilemap.h"
 #include "transition.h"
 
-constexpr float SPEED_THRESHOLD_SQUARED = 0.1f;
+constexpr float SPEED_THRESHOLD_SQUARED = 0.5f;
 
 struct ExplodingTile {
   Vector2 pos;

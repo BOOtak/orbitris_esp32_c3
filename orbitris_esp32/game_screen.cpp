@@ -46,6 +46,8 @@ const uint8_t patterns[] = { 0x00, 0x11, 0x24, 0x55, 0xd8, 0xee, 0xf0, 0xf8 };
 const uint8_t pattern_sizes[] = { 8, 8, 6, 8, 6, 8, 5, 6 };
 constexpr auto patterns_count = std::size(patterns);
 
+constexpr int GAME_OVER_ANIMATION_FRAMES = 60;
+
 const char* status_text_heres_your_piece = "Here's your piece\nDon't lose it again!";
 
 GameScreen::GameScreen(Stats& stats)
@@ -58,6 +60,8 @@ void GameScreen::init() {
   next_tetramino_ = { 0, NEXT_TETRAMINO_POS, nullptr };
   sliding_tetramino_ = {};
   is_exploding_ = false;
+  is_playing_game_over_animation_ = false;
+  game_over_animation_frame_ = 0;
 
   generate_next_tetramino();
 
@@ -101,8 +105,16 @@ Screen* GameScreen::update() {
     active_tetramino_.pos = state_to_coords(planet_state_, DIST_SCALE, star_pos_);
   }
 
-  if (tilemap_.tile_out_of_bounds) {
-    return screens::game_over_screen;
+  if (tilemap_.tile_out_of_bounds && !is_playing_game_over_animation_) {
+    is_playing_game_over_animation_ = true;
+  }
+
+  if (is_playing_game_over_animation_) {
+    game_over_animation_frame_++;
+    if (game_over_animation_frame_ >= GAME_OVER_ANIMATION_FRAMES && !is_exploding_) {
+      init_explosion(tilemap_, star_pos_);
+      is_exploding_ = true;
+    }
   }
 
   update_sliding_tetramino(sliding_tetramino_);
@@ -127,8 +139,7 @@ Screen* GameScreen::update() {
   }
 
   if (is_key_pressed(ESP_KEY_B)) {
-    init_explosion(tilemap_, star_pos_);
-    is_exploding_ = true;
+    is_playing_game_over_animation_ = true;
   }
 
   if (is_exploding_) {
@@ -359,11 +370,13 @@ void GameScreen::draw_trajectory() const {
 }
 
 void GameScreen::draw_boundaries() const {
+  float rect_scale = ease_out_cubic(remap(game_over_animation_frame_, 0, GAME_OVER_ANIMATION_FRAMES, 1.0f, 0.0f));
+
   // draw tetirs boundaries
   Rectangle rect{
     0.0f, 0.0f,
-    ROW_LENGTH * TILE_W,
-    ROW_LENGTH * TILE_H
+    ROW_LENGTH * TILE_W * rect_scale,
+    ROW_LENGTH * TILE_H * rect_scale
   };
 
   rect.x = CENTER_X - rect.width / 2;
@@ -372,8 +385,8 @@ void GameScreen::draw_boundaries() const {
   constexpr uint8_t pattern_50_percent = 0xAA;
   draw_rectangle_lines_pattern(rect, 8, pattern_50_percent);
 
-  rect.width = DEATH_LENGTH * TILE_W;
-  rect.height = DEATH_LENGTH * TILE_H;
+  rect.width = DEATH_LENGTH * TILE_W * rect_scale;
+  rect.height = DEATH_LENGTH * TILE_H * rect_scale;
   rect.x = CENTER_X - rect.width / 2;
   rect.y = CENTER_Y - rect.height / 2;
 
