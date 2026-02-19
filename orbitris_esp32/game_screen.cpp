@@ -132,7 +132,9 @@ Screen* GameScreen::update() {
   }
 
   if (is_exploding_) {
-    update_explosion();
+    if (update_explosion()) {
+      return screens::game_over_screen;
+    }
   }
 
   // update stats

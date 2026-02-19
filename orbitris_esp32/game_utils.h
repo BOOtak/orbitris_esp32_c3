@@ -52,6 +52,8 @@ float get_random_value(float min, float max);
 
 Vector2 vector2_lerp(const Vector2& v1, const Vector2& v2, float amount);
 
+float vector2_square_length(const Vector2& v);
+
 float vector2_square_dist(const Vector2& v1, const Vector2& v2);
 
 float vector2_dist(const Vector2& v1, const Vector2& v2);

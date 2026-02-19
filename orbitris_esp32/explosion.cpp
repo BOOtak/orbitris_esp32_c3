@@ -6,6 +6,8 @@
 #include "tilemap.h"
 #include "transition.h"
 
+constexpr float SPEED_THRESHOLD_SQUARED = 0.1f;
+
 struct ExplodingTile {
   Vector2 pos;
   Vector2 speed;
@@ -31,16 +33,22 @@ void init_explosion(const Tilemap& map, const Vector2& center) {
 }
 
 bool update_explosion() {
+  bool all_stopped = true;
   for (size_t i = 0; i < TILES_X; i++) {
     for (size_t j = 0; j < TILES_Y; j++) {
-      if (explosion_[i][j].occupied) {
-        explosion_[i][j].pos += explosion_[i][j].speed;
-        explosion_[i][j].speed *= 0.98f;
+      auto& cell = explosion_[i][j];
+
+      if (cell.occupied) {
+        cell.pos += cell.speed;
+        cell.speed *= 0.98f;
+        if (vector2_square_length(cell.speed) > SPEED_THRESHOLD_SQUARED) {
+          all_stopped = false;
+        }
       }
     }
   }
 
-  return true;
+  return all_stopped;
 }
 
 void draw_explosion() {

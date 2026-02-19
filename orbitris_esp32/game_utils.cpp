@@ -105,6 +105,10 @@ Vector2 vector2_lerp(const Vector2& v1, const Vector2& v2, float amount) {
   return result;
 }
 
+float vector2_square_length(const Vector2& v) {
+  return v.x * v.x + v.y * v.y;
+}
+
 float vector2_square_dist(const Vector2& v1, const Vector2& v2) {
   return (v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y);
 }
