@@ -191,9 +191,9 @@ void GameScreen::draw() const {
 
   constexpr auto buf_size = 100;
   char score_buf[buf_size]{};
-  snprintf(score_buf, buf_size, "Score: %d\n", tilemap_.game_points);
-  print_text(280, 10, 2, score_buf, 0);
-  print_text(10, 10, 2, "Next:", 0);
+  snprintf(score_buf, buf_size, "%7d", tilemap_.game_points);
+  print_text(310, 8, 2, score_buf, 0);
+  print_text(10, 8, 2, "Next:", 0);
 
   if (status_text_frame_ < STATUS_TEXT_FRAMES) {
     constexpr int text_y_offset = 10;
