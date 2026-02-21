@@ -10,6 +10,7 @@
 #include "input.h"
 #include "table_math.h"
 #include "trace.h"
+#include "transition.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -54,6 +55,9 @@ GameScreen::GameScreen(Stats& stats)
   : Screen(), stats_{ stats } {}
 
 void GameScreen::init() {
+  if (transition_from_screen == screens::pause_screen) {
+    return;
+  }
   stats_ = {};
 
   active_tetramino_ = {};
@@ -135,7 +139,7 @@ Screen* GameScreen::update() {
   }
 
   if (is_key_pressed(ESP_KEY_A)) {
-    return screens::game_over_screen;
+    return screens::pause_screen;
   }
 
   if (is_key_pressed(ESP_KEY_B)) {

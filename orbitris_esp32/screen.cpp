@@ -12,4 +12,5 @@ namespace screens {
 Screen* game_screen = nullptr;
 Screen* game_over_screen = nullptr;
 Screen* menu_screen = nullptr;
+Screen* pause_screen = nullptr;
 }

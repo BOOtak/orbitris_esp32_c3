@@ -5,6 +5,9 @@
 #include "screen.h"
 #include "draw.h"
 
+extern Screen* transition_from_screen;
+extern Screen* transition_to_screen;
+
 enum class TransitionKind {
   ZOOM_IN,
   ZOOM_OUT,
@@ -19,7 +22,6 @@ struct TransitionParams {
 size_t get_masks_count();
 
 DrawMask get_mask(size_t index);
-
 
 void start_transition(Screen* from, Screen* to, TransitionParams params);
 

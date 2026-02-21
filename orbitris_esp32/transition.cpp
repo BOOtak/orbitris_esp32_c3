@@ -30,8 +30,8 @@ static void draw_tarnsition_zoom_in();
 
 static void draw_transition_dissolve();
 
-static Screen* current_screen = nullptr;
-static Screen* next_screen = nullptr;
+Screen* transition_from_screen = nullptr;
+Screen* transition_to_screen = nullptr;
 
 static float transition_progress = 0.0f;
 static TransitionParams transition_params;
@@ -47,13 +47,13 @@ DrawMask get_mask(size_t index) {
 }
 
 void start_transition(Screen* from, Screen* to, TransitionParams params) {
-  current_screen = from;
-  next_screen = to;
+  transition_from_screen = from;
+  transition_to_screen = to;
   transition_progress = 0.0f;
   transition_params = params;
 
   // Init new state when transition begins
-  next_screen->init();
+  transition_to_screen->init();
 
   switch (params.kind) {
     case TransitionKind::ZOOM_IN:
@@ -73,13 +73,13 @@ void start_transition(Screen* from, Screen* to, TransitionParams params) {
 bool update_transition() {
   transition_progress += transition_params.speed;
 
-  next_screen->update();
+  transition_to_screen->update();
 
   if (transition_progress >= 1.0f) {
     // Called only when transition ends
-    current_screen->close();
-    current_screen = next_screen;
-    next_screen = nullptr;
+    transition_from_screen->close();
+    transition_from_screen = transition_to_screen;
+    transition_to_screen = nullptr;
     return true;
   }
 
@@ -92,11 +92,11 @@ static void draw_transition_dissolve() {
   DrawMask new_mask = MASKS[mask_index];
   DrawMask old_mask = ~new_mask;
   begin_mask(old_mask);
-  current_screen->draw();
+  transition_from_screen->draw();
   end_mask();
   end_screen_scale();
   begin_mask(new_mask);
-  next_screen->draw();
+  transition_to_screen->draw();
   end_mask();
 }
 
@@ -114,12 +114,12 @@ static void draw_tarnsition_zoom_in() {
 
   begin_screen_scale(zoom_old);
   begin_mask(old_mask);
-  current_screen->draw();
+  transition_from_screen->draw();
   end_mask();
   end_screen_scale();
   begin_screen_scale(zoom_new);
   begin_mask(new_mask);
-  next_screen->draw();
+  transition_to_screen->draw();
   end_mask();
   end_screen_scale();
 }
@@ -138,12 +138,12 @@ static void draw_tarnsition_zoom_out() {
 
   begin_screen_scale(zoom_old);
   begin_mask(old_mask);
-  current_screen->draw();
+  transition_from_screen->draw();
   end_mask();
   end_screen_scale();
   begin_screen_scale(zoom_new);
   begin_mask(new_mask);
-  next_screen->draw();
+  transition_to_screen->draw();
   end_mask();
   end_screen_scale();
 }
