@@ -39,15 +39,18 @@ void Tilemap::init() {
 }
 
 void Tilemap::update() {
-  if (tile_delete_info_.draw_size > 0) {
-    tile_delete_info_.draw_size -= deleteProgressSpeed;
-  } else {
-    tile_delete_info_.should_delete = true;
+  if (tile_delete_info_.populated) {
+    if (tile_delete_info_.draw_size > 0) {
+      tile_delete_info_.draw_size -= deleteProgressSpeed;
+    } else {
+      tile_delete_info_.should_delete = true;
+    }
   }
 
   if (tile_delete_info_.should_delete) {
     delete_tiles_for_real();
     tile_delete_info_.should_delete = false;
+    tile_delete_info_.populated = false;
   }
 }
 
@@ -196,6 +199,7 @@ void Tilemap::check_rows() {
 
   if (hits > 0) {
     tile_delete_info_.draw_size = TILE_W;
+    tile_delete_info_.populated = true;
   }
 
   switch (hits) {

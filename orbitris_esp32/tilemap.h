@@ -25,6 +25,7 @@ struct TileDeleteInfo {
   bool rows[TILES_Y];
   bool columns[TILES_X];
   float draw_size;
+  bool populated;
   bool should_delete;
 };
 
