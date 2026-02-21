@@ -21,4 +21,5 @@ private:
   Button pause_buttons_[PAUSE_BUTTONS_COUNT];
   int grid_map_[PAUSE_BUTTONS_COUNT];
   ButtonGridManager manager_;
+  mutable bool first_draw_;
 };

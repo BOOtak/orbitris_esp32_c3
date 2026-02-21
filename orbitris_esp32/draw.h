@@ -37,6 +37,8 @@ void fill_scrfeen_buffer(int color);
 
 void draw_rectangle(const Rectangle& rect, int color);
 
+void draw_rectangle(int posX, int posY, int width, int height, int color);
+
 void draw_rectangle_checkerboard(int posX, int posY, int width, int height);
 
 void draw_rectangle_lines(int posX, int posY, int width, int height, int color);

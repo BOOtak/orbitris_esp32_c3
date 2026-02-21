@@ -38,6 +38,7 @@ PauseScreen::PauseScreen()
 
 void PauseScreen::init() {
   manager_.init();
+  first_draw_ = true;
 }
 
 Screen* PauseScreen::update() {
@@ -55,15 +56,17 @@ Screen* PauseScreen::update() {
 }
 
 void PauseScreen::draw() const {
-  draw_rectangle_checkerboard(0, 0, LCD_WIDTH, LCD_HEIGHT);
-
   const int text_x = LCD_WIDTH / 2 - text_size_.x / 2;
   const int text_y = LCD_HEIGHT / 2 - text_size_.y / 2;
-
-  draw_rectangle(Rectangle{ text_x - 2.0f, text_y - 2.0f, text_size_.x + 4, text_size_.y + 4 }, LCD_WHITE);
-  print_text(text_x, text_y, 2, text_buffer_, 0);
-
-  draw_rectangle(Rectangle{0.0f, start_y - 5.0f, LCD_WIDTH, 45.0f}, LCD_WHITE);
-
-  manager_.draw();
+  if (first_draw_) {
+    // This is very time-consuming
+    draw_rectangle_checkerboard(0, 0, LCD_WIDTH, LCD_HEIGHT);
+    first_draw_ = false;
+    draw_rectangle(text_x - 2, text_y - 2, text_size_.x + 4, text_size_.y + 4, LCD_WHITE);
+    print_text(text_x, text_y, 2, text_buffer_, 0);
+  } else {
+    constexpr int start_y_strip = start_y - 8;
+    draw_rectangle(0, start_y_strip, LCD_WIDTH, LCD_HEIGHT - start_y_strip, LCD_WHITE);
+    manager_.draw();
+  }
 }
