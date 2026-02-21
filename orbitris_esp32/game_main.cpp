@@ -24,6 +24,8 @@ struct TransitionRule {
 TransitionParams default_params = { TransitionKind::ZOOM_IN, 1.0f / 25 };
 
 TransitionRule rules[]{
+  { screens::pause_screen, screens::game_screen, { TransitionKind::NONE, 1.0f } },
+  { screens::game_screen, screens::pause_screen, { TransitionKind::NONE, 1.0f } },
   { screens::game_screen, screens::game_over_screen, { TransitionKind::ZOOM_OUT, 1.0f / 60 } },
   { screens::game_over_screen, screens::game_screen, { TransitionKind::ZOOM_IN, 1.0f / 25 } }
 };

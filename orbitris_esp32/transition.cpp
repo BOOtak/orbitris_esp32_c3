@@ -30,6 +30,8 @@ static void draw_tarnsition_zoom_in();
 
 static void draw_transition_dissolve();
 
+static void draw_transition_none();
+
 Screen* transition_from_screen = nullptr;
 Screen* transition_to_screen = nullptr;
 
@@ -65,7 +67,9 @@ void start_transition(Screen* from, Screen* to, TransitionParams params) {
     case TransitionKind::DISSOLVE:
       draw_transition = draw_transition_dissolve;
       break;
+    case TransitionKind::NONE:
     default:
+      draw_transition = draw_transition_none;
       break;
   }
 }
@@ -84,6 +88,10 @@ bool update_transition() {
   }
 
   return false;
+}
+
+static void draw_transition_none() {
+  transition_to_screen->draw();
 }
 
 static void draw_transition_dissolve() {

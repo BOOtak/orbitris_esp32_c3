@@ -34,6 +34,7 @@ MenuScreen::MenuScreen()
 }
 
 void MenuScreen::init() {
+  manager_.init();
 }
 
 Screen* MenuScreen::update() {

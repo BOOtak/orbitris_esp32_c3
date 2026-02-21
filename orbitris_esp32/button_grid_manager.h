@@ -11,6 +11,8 @@ public:
 
   ButtonGridManager(Button* buttons, size_t count, int* custom_map, size_t rs, size_t cs);
 
+  void init();
+
   /**
      * @brief Processes input, updates focus/animation, and returns the ID of the pressed button.
      * @return The ID of the button pressed with key A, or BUTTON_NO_ACTION (-1) otherwise.
@@ -34,6 +36,10 @@ private:
   Rectangle anim_start_rect_;
   Rectangle anim_target_rect_;
   int anim_timer_;
+
+  bool action_was_pressed_;
+
+  void init_focus();
 
   void update_focus_state_logic(int old_index, int new_index);
 

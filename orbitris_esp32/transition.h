@@ -11,7 +11,8 @@ extern Screen* transition_to_screen;
 enum class TransitionKind {
   ZOOM_IN,
   ZOOM_OUT,
-  DISSOLVE
+  DISSOLVE,
+  NONE
 };
 
 struct TransitionParams {
