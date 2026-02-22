@@ -8,7 +8,7 @@ constexpr auto bufsize = 100;
 
 class GameOverScreen : public Screen {
 public:
-  GameOverScreen(const Stats& stats);
+  GameOverScreen(Stats& stats);
 
   virtual void init() override;
 
@@ -17,7 +17,7 @@ public:
   virtual void draw() const override;
 
 private:
-  const Stats& stats_;
+  Stats& stats_;
   Vector2 text_size_;
   char score_buffer_[bufsize];
 };

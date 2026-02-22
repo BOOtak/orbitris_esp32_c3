@@ -5,14 +5,17 @@
 #include "const.h"
 #include "draw.h"
 #include "input.h"
+#include "persist.h"
 #include "screen.h"
 
-GameOverScreen::GameOverScreen(const Stats &stats) : Screen(), stats_{ stats } {
+GameOverScreen::GameOverScreen(Stats &stats) : Screen(), stats_{ stats } {
 }
 
 void GameOverScreen::init() {
   snprintf(score_buffer_, bufsize, "Game Over!\nScore: %d", stats_.game_points);
   text_size_ = measure_text(score_buffer_, 2);
+  stats_.in_game = false;
+  persist_stats(stats_);
 }
 
 Screen *GameOverScreen::update() {

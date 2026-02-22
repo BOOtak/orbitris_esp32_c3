@@ -8,6 +8,7 @@
 #include "draw.h"
 #include "explosion.h"
 #include "input.h"
+#include "persist.h"
 #include "table_math.h"
 #include "trace.h"
 #include "transition.h"
@@ -91,6 +92,7 @@ Screen* GameScreen::update() {
   if (tilemap_.update()) {
     stats_.tilemap = tilemap_.serialize();
     stats_.game_points = tilemap_.game_points;
+    persist_stats(stats_);
   }
 
   Rectangle collision{};
@@ -252,6 +254,8 @@ void GameScreen::generate_next_tetramino() {
   next_tetramino_.block = Blocks[next_idx];
   stats_.next_block_idx = next_idx;
   active_tetramino_.rot_index = 0;
+
+  persist_stats(stats_);
 }
 
 void GameScreen::update_sliding_tetramino(ActiveTetramino& block) {

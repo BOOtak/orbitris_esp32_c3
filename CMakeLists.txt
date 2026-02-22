@@ -17,6 +17,7 @@ add_executable(${PROJECT_NAME}
     raylib_adapter/main.cpp
     raylib_adapter/input_raylib.cpp
     raylib_adapter/lcd_raylib.cpp
+    raylib_adapter/persist_raylib.cpp
     raylib_adapter/trace_printf.cpp
 
     orbitris_esp32/button.cpp

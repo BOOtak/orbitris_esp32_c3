@@ -6,6 +6,7 @@
 #include "game_over_screen.h"
 #include "game_utils.h"
 #include "menu_screen.h"
+#include "persist.h"
 #include "pause_screen.h"
 #include "screen.h"
 #include "stats.h"
@@ -59,6 +60,10 @@ void draw_screen() {
 
 void init_game() {
   init_trig_tables();
+
+  if (!load_stats(stats) || !stats.in_game) {
+    stats = {};
+  }
 
   screens::game_screen = new GameScreen(stats);
   screens::game_over_screen = new GameOverScreen(stats);
