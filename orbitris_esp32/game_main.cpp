@@ -67,10 +67,15 @@ void init_game() {
 
   screens::game_screen = new GameScreen(stats);
   screens::game_over_screen = new GameOverScreen(stats);
-  screens::menu_screen = new MenuScreen();
+  screens::menu_screen = new MenuScreen(stats);
   screens::pause_screen = new PauseScreen();
 
-  current_screen = screens::menu_screen;
+  if (stats.in_game) {
+    current_screen = screens::game_screen;
+  } else {
+    current_screen = screens::menu_screen;
+  }
+
   current_screen->init();
   in_transition = false;
 }

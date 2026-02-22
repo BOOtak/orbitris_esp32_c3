@@ -5,6 +5,7 @@
 #include "const.h"
 #include "draw.h"
 #include "trace.h"
+#include "persist.h"
 #include "screen.h"
 
 const char* label_new_game = "New game";
@@ -22,8 +23,9 @@ constexpr int delta_y = 48;
 constexpr int start_x = (LCD_WIDTH - button_width) / 2;
 constexpr int start_y = (LCD_HEIGHT - button_height - (delta_y * (BUTTONS_COUNT - 1))) / 2;
 
-MenuScreen::MenuScreen()
+MenuScreen::MenuScreen(Stats& stats)
   : Screen(),
+    stats_(stats),
     menu_buttons_{
       { { start_x, start_y + delta_y * 0, button_width, button_height }, label_new_game, 2, id_new_game },
       { { start_x, start_y + delta_y * 1, button_width, button_height }, label_settings, 2, id_settings },
@@ -35,6 +37,10 @@ MenuScreen::MenuScreen()
 
 void MenuScreen::init() {
   manager_.init();
+  if (stats_.in_game) {
+    stats_.in_game = false;
+    persist_stats(stats_);
+  }
 }
 
 Screen* MenuScreen::update() {

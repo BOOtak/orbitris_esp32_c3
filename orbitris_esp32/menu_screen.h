@@ -3,12 +3,13 @@
 #include "button.h"
 #include "button_grid_manager.h"
 #include "screen.h"
+#include "stats.h"
 
 constexpr int BUTTONS_COUNT = 3;
 
 class MenuScreen : public Screen {
 public:
-  MenuScreen();
+  MenuScreen(Stats& stats);
 
   virtual void init() override;
 
@@ -17,7 +18,7 @@ public:
   virtual void draw() const override;
 
 private:
-
+  Stats& stats_;
   Button menu_buttons_[BUTTONS_COUNT];
   int grid_map_[BUTTONS_COUNT];
   ButtonGridManager manager_;
