@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdlib>
 
 #include "game_utils.h"
@@ -9,6 +10,38 @@ constexpr auto TILES_X = 20;
 constexpr auto TILES_Y = 20;
 constexpr auto ROW_LENGTH = 8;
 constexpr auto DEATH_LENGTH = 12;
+
+constexpr auto BITS_IN_BYTE = 8;
+constexpr auto TILEMAP_CELLS = TILES_X * TILES_Y;
+constexpr auto TILEMAP_BYTES = (TILEMAP_CELLS >> 3) + (TILEMAP_CELLS & 7 ? 1 : 0);
+
+struct TileBitmap {
+  std::array<uint8_t, TILEMAP_BYTES> data;
+
+  inline bool get_tile(int x, int y) const {
+    if (x >= TILES_X || y >= TILES_Y) {
+      return false;
+    }
+
+    auto tile_idx = y * TILES_X + x;
+    auto byte_idx = tile_idx >> 3;
+    auto bit_idx = tile_idx & 7;
+
+    return (data[byte_idx] & (1 << bit_idx)) != 0;
+  }
+
+  inline void set_tile(int x, int y) {
+    if (x >= TILES_X || y >= TILES_Y) {
+      return;
+    }
+
+    auto tile_idx = y * TILES_X + x;
+    auto byte_idx = tile_idx >> 3;
+    auto bit_idx = tile_idx & 7;
+
+    data[byte_idx] |= (1 << bit_idx);
+  }
+};
 
 enum class TileFlags : uint8_t {
   NONE = 0,
@@ -29,6 +62,8 @@ struct TileDeleteInfo {
   bool should_delete;
 };
 
+struct Stats;
+
 class Tilemap {
 public:
   int game_points{};
@@ -37,13 +72,13 @@ public:
 
   Tilemap();
 
-  void init();
+  void init(const Stats& init_stats);
 
-  void update();
+  bool update();
 
   void draw() const;
 
-  Rectangle intersect_tiles(const ActiveTetramino& block);
+  Rectangle intersect_tiles(const ActiveTetramino& block) const;
 
   void place_tetramino(const ActiveTetramino& block);
 
@@ -69,9 +104,12 @@ public:
 
   bool is_blank(int ix, int iy) const;
 
+  TileBitmap serialize() const;
+
 private:
   Tile tilemap_[TILES_Y][TILES_X]{};
   TileDeleteInfo tile_delete_info_{};
+  bool tilemap_changed_{};
 
   bool is_blank(const Tile& tile) const;
 
@@ -83,5 +121,5 @@ private:
 
   void get_tetramino_tilemap_pos(const ActiveTetramino& block, int (*coords)[2]) const;
 
-  void delete_tiles_for_real();
+  bool delete_tiles_for_real();
 };

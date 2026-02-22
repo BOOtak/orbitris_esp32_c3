@@ -1,5 +1,11 @@
 #pragma once
 
+#include "tilemap.h"
+
 struct Stats {
-  int game_points = 0;
+  bool in_game;
+  int game_points;
+  TileBitmap tilemap;
+  uint8_t active_block_idx;
+  uint8_t next_block_idx;
 };

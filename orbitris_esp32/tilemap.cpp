@@ -6,6 +6,7 @@
 
 #include "const.h"
 #include "draw.h"
+#include "stats.h"
 #include "trace.h"
 
 // Tilemap location and dimensions
@@ -19,26 +20,38 @@ constexpr Rectangle tileMapRect = { tileMapPosX, tileMapPosY, tileMapWidth, tile
 constexpr float deleteProgressSpeed = 0.5f;
 
 Tilemap::Tilemap() {
-  init();
 }
 
-void Tilemap::init() {
-  game_points = 0;
-  tile_out_of_bounds = false;
-
+void Tilemap::init(const Stats& init_stats) {
   std::memset(tilemap_, 0, sizeof(tilemap_));
-  constexpr int filled_rows = 4;
-  constexpr int offset = TILES_X / 2 - filled_rows / 2;
-  for (size_t x = offset; x < offset + filled_rows; x++) {
-    for (size_t y = offset; y < offset + filled_rows; y++) {
-      tilemap_[x][y].occupied = true;
+  tile_delete_info_ = {};
+  tilemap_changed_ = false;
+
+  if (init_stats.in_game) {
+    game_points = init_stats.game_points;
+    for (size_t x = 0; x < TILES_X; x++) {
+      for (size_t y = 0; y < TILES_Y; y++) {
+        tilemap_[x][y].occupied = init_stats.tilemap.get_tile(x, y);
+      }
+    }
+
+    check_rows();
+    check_bounds();
+  } else {
+    game_points = 0;
+    tile_out_of_bounds = false;
+    constexpr int filled_rows = 4;
+    constexpr int offset = TILES_X / 2 - filled_rows / 2;
+    for (size_t x = offset; x < offset + filled_rows; x++) {
+      for (size_t y = offset; y < offset + filled_rows; y++) {
+        tilemap_[x][y].occupied = true;
+      }
     }
   }
-
-  tile_delete_info_ = {};
 }
 
-void Tilemap::update() {
+bool Tilemap::update() {
+  bool res = false;
   if (tile_delete_info_.populated) {
     if (tile_delete_info_.draw_size > 0) {
       tile_delete_info_.draw_size -= deleteProgressSpeed;
@@ -48,10 +61,17 @@ void Tilemap::update() {
   }
 
   if (tile_delete_info_.should_delete) {
-    delete_tiles_for_real();
+    res = delete_tiles_for_real();
     tile_delete_info_.should_delete = false;
     tile_delete_info_.populated = false;
   }
+
+  if (res || tilemap_changed_) {
+    tilemap_changed_ = false;
+    return true;
+  }
+
+  return false;
 }
 
 void Tilemap::draw() const {
@@ -73,7 +93,7 @@ void Tilemap::draw() const {
   }
 }
 
-Rectangle Tilemap::intersect_tiles(const ActiveTetramino& block) {
+Rectangle Tilemap::intersect_tiles(const ActiveTetramino& block) const {
   // TODO: optimize and check collisions only with tiles surrounding the
   // tilemap. Or don't do that, it should work just fine as-is
 
@@ -133,6 +153,8 @@ void Tilemap::place_tetramino(const ActiveTetramino& block) {
     // trace("Add %d %d\n", coords[i][0], coords[i][1]);
     tilemap_[coords[i][0]][coords[i][1]].occupied = true;
   }
+
+  tilemap_changed_ = true;
 
   check_rows();
   check_bounds();
@@ -289,6 +311,19 @@ bool Tilemap::is_blank(int ix, int iy) const {
   return is_blank(tilemap_[ix][iy]);
 }
 
+TileBitmap Tilemap::serialize() const {
+  TileBitmap res{};
+  for (size_t i = 0; i < TILES_X; i++) {
+    for (size_t j = 0; j < TILES_Y; j++) {
+      if (!is_blank(tilemap_[i][j])) {
+        res.set_tile(i, j);
+      }
+    }
+  }
+
+  return res;
+}
+
 void Tilemap::get_tetramino_tilemap_pos(const ActiveTetramino& block, int (*coords)[2] /* int[4][2] */) const {
   size_t idx = 0;
   float deltaX = block.pos.x - block.block->center.x * TILE_W - tileMapPosX;
@@ -311,9 +346,11 @@ void Tilemap::get_tetramino_tilemap_pos(const ActiveTetramino& block, int (*coor
   }
 }
 
-void Tilemap::delete_tiles_for_real() {
+bool Tilemap::delete_tiles_for_real() {
+  bool res = false;
   for (size_t i = 0; i < TILES_X; i++) {
     if (tile_delete_info_.columns[i]) {
+      res = true;
       size_t di = 1, max_i = TILES_X;
       if (i < TILES_X / 2) {
         trace("Move right\n");
@@ -348,6 +385,7 @@ void Tilemap::delete_tiles_for_real() {
 
   for (size_t j = 0; j < TILES_Y; j++) {
     if (tile_delete_info_.rows[j]) {
+      res = true;
       size_t dj = 1, max_j = TILES_Y;
       if (j < TILES_Y / 2) {
         trace("Move down\n");
@@ -379,6 +417,8 @@ void Tilemap::delete_tiles_for_real() {
       }
     }
   }
+
+  return res;
 }
 
 bool Tilemap::is_blank(const Tile& tile) const {

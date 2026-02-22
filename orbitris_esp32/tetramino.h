@@ -34,6 +34,8 @@ extern Tetramino* Blocks[];
 
 Tetramino* get_random_block();
 
+int get_random_block_idx();
+
 void draw_tile(int x, int y, int size);
 
 void draw_tetramino(const ActiveTetramino& tetramino);

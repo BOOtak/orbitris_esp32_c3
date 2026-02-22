@@ -58,16 +58,23 @@ void GameScreen::init() {
   if (transition_from_screen == screens::pause_screen) {
     return;
   }
-  stats_ = {};
 
-  active_tetramino_ = {};
-  next_tetramino_ = { 0, NEXT_TETRAMINO_POS, nullptr };
   sliding_tetramino_ = {};
   is_exploding_ = false;
   is_playing_game_over_animation_ = false;
   game_over_animation_frame_ = 0;
 
-  generate_next_tetramino();
+  next_tetramino_ = { 0, NEXT_TETRAMINO_POS, nullptr };
+
+  if (!stats_.in_game) {
+    stats_ = {};
+    active_tetramino_ = {};
+    generate_next_tetramino();
+  } else {
+    active_tetramino_ = {};
+    active_tetramino_.block = Blocks[stats_.active_block_idx];
+    next_tetramino_.block = Blocks[stats_.next_block_idx];
+  }
 
   reset_planet_state();
   delta_time_ = 3600 * 24;
@@ -75,11 +82,16 @@ void GameScreen::init() {
   current_zoom_ = 1.0f;
   target_zoom_ = 1.0f;
 
-  tilemap_.init();
+  tilemap_.init(stats_);
+  stats_.tilemap = tilemap_.serialize();
+  stats_.in_game = true;
 }
 
 Screen* GameScreen::update() {
-  tilemap_.update();
+  if (tilemap_.update()) {
+    stats_.tilemap = tilemap_.serialize();
+    stats_.game_points = tilemap_.game_points;
+  }
 
   Rectangle collision{};
   int sim_runs = get_resolution(planet_state_);
@@ -151,9 +163,6 @@ Screen* GameScreen::update() {
       return screens::game_over_screen;
     }
   }
-
-  // update stats
-  stats_.game_points = tilemap_.game_points;
 
   // prepare for draw
   float diff = current_zoom_ - target_zoom_;
@@ -231,12 +240,17 @@ void GameScreen::reset_planet_state() {
 void GameScreen::generate_next_tetramino() {
   // TODO: Blocks pool!
   if (next_tetramino_.block == NULL) {
-    active_tetramino_.block = get_random_block();
+    int active_idx = get_random_block_idx();
+    stats_.active_block_idx = active_idx;
+    active_tetramino_.block = Blocks[active_idx];
   } else {
     active_tetramino_.block = next_tetramino_.block;
+    stats_.active_block_idx = stats_.next_block_idx;
   }
 
-  next_tetramino_.block = get_random_block();
+  int next_idx = get_random_block_idx();
+  next_tetramino_.block = Blocks[next_idx];
+  stats_.next_block_idx = next_idx;
   active_tetramino_.rot_index = 0;
 }
 

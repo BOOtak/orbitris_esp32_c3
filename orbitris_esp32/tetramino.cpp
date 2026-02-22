@@ -147,7 +147,11 @@ Tetramino Z_Block{
 Tetramino* Blocks[] = { &I_Block, &L_Block, &J_Block, &O_Block, &S_Block, &T_Block, &Z_Block };
 
 Tetramino* get_random_block() {
-  return Blocks[get_random_value(0, ARR_SIZE(Blocks) - 1)];
+  return Blocks[get_random_block_idx()];
+}
+
+int get_random_block_idx() {
+  return get_random_value(0, ARR_SIZE(Blocks) - 1);
 }
 
 void draw_tile(int x, int y, int size) {
