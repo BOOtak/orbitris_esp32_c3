@@ -8,7 +8,7 @@
 #include "persist.h"
 #include "screen.h"
 
-GameOverScreen::GameOverScreen(Stats &stats) : Screen(), stats_{ stats } {
+GameOverScreen::GameOverScreen(Stats &stats, HighscoreTable &highscores) : Screen(), stats_{ stats }, highscores_{ highscores } {
 }
 
 void GameOverScreen::init() {
@@ -16,11 +16,17 @@ void GameOverScreen::init() {
   text_size_ = measure_text(score_buffer_, 2);
   stats_.in_game = false;
   persist_stats(stats_);
+
+  if (highscores_.is_highscore(stats_.game_points)) {
+    // TODO: enter highscore on the dedicated screen
+    highscores_.add_highscore("Nagibator", stats_.game_points);
+    persist_highscores(highscores_);
+  }
 }
 
 Screen *GameOverScreen::update() {
   if (is_key_pressed(ESP_KEY_A)) {
-    return screens::game_screen;
+    return screens::menu_screen;
   }
 
   return this;

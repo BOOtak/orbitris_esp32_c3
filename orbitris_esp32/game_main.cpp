@@ -32,6 +32,7 @@ TransitionRule rules[]{
 };
 
 Stats stats{};
+HighscoreTable highscores{};
 
 static bool in_transition = false;
 
@@ -61,12 +62,16 @@ void draw_screen() {
 void init_game() {
   init_trig_tables();
 
+  if (!load_highscores(highscores)) {
+    highscores = {};
+  }
+
   if (!load_stats(stats) || !stats.in_game) {
     stats = {};
   }
 
   screens::game_screen = new GameScreen(stats);
-  screens::game_over_screen = new GameOverScreen(stats);
+  screens::game_over_screen = new GameOverScreen(stats, highscores);
   screens::menu_screen = new MenuScreen(stats);
   screens::pause_screen = new PauseScreen();
 
