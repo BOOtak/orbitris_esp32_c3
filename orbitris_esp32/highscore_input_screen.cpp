@@ -25,7 +25,7 @@ constexpr int ID_LEFT = 37;
 constexpr int ID_RIGHT = 38;
 
 constexpr int char_indices[] = {
-  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+  '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
   'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
   'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ID_ENTER,
   'Z', 'X', 'C', 'V', 'B', 'N', 'M', ID_LEFT, ID_RIGHT, ' '
@@ -33,16 +33,16 @@ constexpr int char_indices[] = {
 
 HighscoreInputScreen::HighscoreInputScreen()
   : Screen(), keyboard_{
-      { { start_x + dx * 0, start_y + dy * 0, button_width, button_height }, "0", 2, 0 },
-      { { start_x + dx * 1, start_y + dy * 0, button_width, button_height }, "1", 2, 1 },
-      { { start_x + dx * 2, start_y + dy * 0, button_width, button_height }, "2", 2, 2 },
-      { { start_x + dx * 3, start_y + dy * 0, button_width, button_height }, "3", 2, 3 },
-      { { start_x + dx * 4, start_y + dy * 0, button_width, button_height }, "4", 2, 4 },
-      { { start_x + dx * 5, start_y + dy * 0, button_width, button_height }, "5", 2, 5 },
-      { { start_x + dx * 6, start_y + dy * 0, button_width, button_height }, "6", 2, 6 },
-      { { start_x + dx * 7, start_y + dy * 0, button_width, button_height }, "7", 2, 7 },
-      { { start_x + dx * 8, start_y + dy * 0, button_width, button_height }, "8", 2, 8 },
-      { { start_x + dx * 9, start_y + dy * 0, button_width, button_height }, "9", 2, 9 },
+      { { start_x + dx * 0, start_y + dy * 0, button_width, button_height }, "1", 2, 0 },
+      { { start_x + dx * 1, start_y + dy * 0, button_width, button_height }, "2", 2, 1 },
+      { { start_x + dx * 2, start_y + dy * 0, button_width, button_height }, "3", 2, 2 },
+      { { start_x + dx * 3, start_y + dy * 0, button_width, button_height }, "4", 2, 3 },
+      { { start_x + dx * 4, start_y + dy * 0, button_width, button_height }, "5", 2, 4 },
+      { { start_x + dx * 5, start_y + dy * 0, button_width, button_height }, "6", 2, 5 },
+      { { start_x + dx * 6, start_y + dy * 0, button_width, button_height }, "7", 2, 6 },
+      { { start_x + dx * 7, start_y + dy * 0, button_width, button_height }, "8", 2, 7 },
+      { { start_x + dx * 8, start_y + dy * 0, button_width, button_height }, "9", 2, 8 },
+      { { start_x + dx * 9, start_y + dy * 0, button_width, button_height }, "0", 2, 9 },
 
       { { start_x + dx * 0, start_y + dy * 1, button_width, button_height }, "Q", 2, 10 },
       { { start_x + dx * 1, start_y + dy * 1, button_width, button_height }, "W", 2, 11 },
