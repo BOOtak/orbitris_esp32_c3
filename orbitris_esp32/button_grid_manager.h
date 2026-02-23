@@ -6,6 +6,21 @@
 
 constexpr int BUTTON_NO_ACTION = -1;
 
+// Direction indices for arrays
+enum Direction {
+  DIR_UP,
+  DIR_DOWN,
+  DIR_LEFT,
+  DIR_RIGHT,
+  DIR_COUNT
+};
+
+enum class RepeatState {
+  IDLE = 0,
+  DELAY = 1,
+  REPEAT = 2
+};
+
 class ButtonGridManager {
 public:
 
@@ -39,13 +54,21 @@ private:
 
   bool action_was_pressed_;
 
+  RepeatState repeat_state_[Direction::DIR_COUNT];
+  int repeat_timer_[Direction::DIR_COUNT];
+
   void init_focus();
 
   void update_focus_state_logic(int old_index, int new_index);
 
   void draw_animated_focus_frame() const;
 
-  int get_index(int idx);
+  int get_index(int idx) const;
 
   Rectangle get_animation_rect(int index) const;
+
+  // Helper: find next valid cell in direction (dr, dc) with wrap-around
+  // Returns true and sets out_r, out_c if found; false otherwise.
+  bool find_next_valid_cell(int start_r, int start_c, int dr, int dc,
+                            int& out_r, int& out_c) const;
 };

@@ -6,6 +6,23 @@
 
 constexpr int ANIMATION_FRAMES = 30;
 
+// Repeat timing constants (in frames)
+constexpr int REPEAT_DELAY_FRAMES = 18;    // frames before first repeat (e.g., ~300ms at 60fps)
+constexpr int REPEAT_INTERVAL_FRAMES = 6;  // frames between subsequent repeats (e.g., ~100ms at 60fps)
+
+struct DirectionInfo {
+  int key;
+  int dr;
+  int dc;
+};
+
+constexpr DirectionInfo directions[DIR_COUNT] = {
+  { ESP_KEY_UP, -1, 0 },
+  { ESP_KEY_DOWN, 1, 0 },
+  { ESP_KEY_LEFT, 0, -1 },
+  { ESP_KEY_RIGHT, 0, 1 }
+};
+
 ButtonGridManager::ButtonGridManager(
   Button *buttons, size_t count, int *custom_map, size_t rs, size_t cs)
   : all_buttons_(buttons),
@@ -16,57 +33,96 @@ ButtonGridManager::ButtonGridManager(
     focused_grid_row_(BUTTON_NO_ACTION),
     focused_grid_col_(BUTTON_NO_ACTION),
     anim_timer_(0),
-    action_was_pressed_(false) {
+    action_was_pressed_(false),
+    repeat_state_{},
+    repeat_timer_{} {
   init_focus();
 }
 
+
 void ButtonGridManager::init() {
   action_was_pressed_ = false;
+
+  for (int i = 0; i < DIR_COUNT; ++i) {
+    repeat_state_[i] = RepeatState::IDLE;
+    repeat_timer_[i] = 0;
+  }
+
   init_focus();
+}
+
+bool ButtonGridManager::find_next_valid_cell(int start_r, int start_c, int dr, int dc,
+                                             int &out_r, int &out_c) const {
+  int r = start_r;
+  int c = start_c;
+
+  while (true) {
+    // Move one step with wrap
+    r = (r + dr + rows_) % rows_;
+    c = (c + dc + cols_) % cols_;
+
+    // If we returned to the start, no other valid cell exists
+    if (r == start_r && c == start_c) {
+      return false;
+    }
+
+    int index = get_index(r * cols_ + c);
+    if (index != BUTTON_NO_ACTION) {
+      out_r = r;
+      out_c = c;
+      return true;
+    }
+  }
 }
 
 int ButtonGridManager::update() {
   int prev_r = focused_grid_row_;
   int prev_c = focused_grid_col_;
+  int prev_index = get_index(prev_r * cols_ + prev_c);
 
-  int dir_r = 0;
-  int dir_c = 0;
-  bool input_detected = false;
   int action_id = BUTTON_NO_ACTION;  // Store potential action ID
 
-  if (is_key_pressed(ESP_KEY_UP)) {
-    dir_r = -1;
-    input_detected = true;
-  } else if (is_key_pressed(ESP_KEY_DOWN)) {
-    dir_r = 1;
-    input_detected = true;
-  } else if (is_key_pressed(ESP_KEY_LEFT)) {
-    dir_c = -1;
-    input_detected = true;
-  } else if (is_key_pressed(ESP_KEY_RIGHT)) {
-    dir_c = 1;
-    input_detected = true;
-  }
+  // Process each direction until we find a movement
+  for (int dir = 0; dir < DIR_COUNT; ++dir) {
+    const auto &info = directions[dir];
 
-  if (input_detected) {
-    int prev_button_index = get_index(prev_r * cols_ + prev_c);
+    if (is_key_down(info.key)) {
+      // Determine if we should move based on repeat state
+      bool should_move = false;
 
-    int target_r = prev_r + dir_r;
-    int target_c = prev_c + dir_c;
+      if (repeat_state_[dir] == RepeatState::IDLE) {
+        // First press - move immediately
+        should_move = true;
+        repeat_state_[dir] = RepeatState::DELAY;
+        repeat_timer_[dir] = 0;
+      } else {
+        // Already in delay or repeat state - check timer
+        repeat_timer_[dir]++;
 
-    while (target_r >= 0 && target_r < rows_ && target_c >= 0 && target_c < cols_) {
-      int current_cell_index = get_index(target_r * cols_ + target_c);
+        int threshold = (repeat_state_[dir] == RepeatState::DELAY) ? REPEAT_DELAY_FRAMES : REPEAT_INTERVAL_FRAMES;
 
-      if (current_cell_index != BUTTON_NO_ACTION && current_cell_index != prev_button_index) {
-        // Found a new, valid button!
-        focused_grid_row_ = target_r;
-        focused_grid_col_ = target_c;
-        update_focus_state_logic(prev_button_index, current_cell_index);
-        break;
+        if (repeat_timer_[dir] >= threshold) {
+          should_move = true;
+          repeat_state_[dir] = RepeatState::REPEAT;
+          repeat_timer_[dir] = 0;
+        }
       }
 
-      target_r += dir_r;
-      target_c += dir_c;
+      // Perform movement if needed
+      if (should_move) {
+        int new_r, new_c;
+        if (find_next_valid_cell(prev_r, prev_c, info.dr, info.dc, new_r, new_c)) {
+          focused_grid_row_ = new_r;
+          focused_grid_col_ = new_c;
+          int new_index = get_index(new_r * cols_ + new_c);
+          update_focus_state_logic(prev_index, new_index);
+          break;
+        }
+      }
+    } else {
+      // Key released - reset state
+      repeat_state_[dir] = RepeatState::IDLE;
+      repeat_timer_[dir] = 0;
     }
   }
 
@@ -175,7 +231,7 @@ void ButtonGridManager::draw_animated_focus_frame() const {
   draw_rectangle_lines(x, y, w, h, LCD_BLACK);
 }
 
-int ButtonGridManager::get_index(int idx) {
+int ButtonGridManager::get_index(int idx) const {
   if (grid_map_) {
     return grid_map_[idx];
   } else {
