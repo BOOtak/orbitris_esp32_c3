@@ -45,5 +45,7 @@ private:
 
   void draw_animated_focus_frame() const;
 
+  int get_index(int idx);
+
   Rectangle get_animation_rect(int index) const;
 };

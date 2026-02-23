@@ -5,6 +5,7 @@
 #include "game_screen.h"
 #include "game_over_screen.h"
 #include "game_utils.h"
+#include "highscore_input_screen.h"
 #include "menu_screen.h"
 #include "persist.h"
 #include "pause_screen.h"
@@ -74,6 +75,7 @@ void init_game() {
   screens::game_over_screen = new GameOverScreen(stats, highscores);
   screens::menu_screen = new MenuScreen(stats);
   screens::pause_screen = new PauseScreen();
+  screens::highscore_input_screen = new HighscoreInputScreen();
 
   if (stats.in_game) {
     current_screen = screens::game_screen;

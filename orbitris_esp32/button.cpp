@@ -3,28 +3,13 @@
 #include "const.h"
 #include "draw.h"
 
-Button::Button(Rectangle rect, const char *label, int scale, int id)
-  : rect_{ rect }, label_{ label }, text_scale_{ scale }, id_{ id }, state_{ ButtonState::idle } {}
-
-void Button::set_state(ButtonState new_state) {
-  state_ = new_state;
-}
-
-const Rectangle &Button::get_rect() const {
-  return rect_;
-}
-
-int Button::get_id() const {
-  return id_;
-}
-
 void Button::draw() const {
-  int x = rect_.x;
-  int y = rect_.y;
-  int w = rect_.width;
-  int h = rect_.height;
+  int x = rect.x;
+  int y = rect.y;
+  int w = rect.width;
+  int h = rect.height;
 
-  switch (state_) {
+  switch (state) {
     case ButtonState::idle:
       draw_rectangle_lines(x, y, w, h, LCD_BLACK);
       break;
@@ -36,11 +21,10 @@ void Button::draw() const {
       break;
   }
 
-
-  if (label_) {
-    Vector2 measure = measure_text(label_, text_scale_);
+  if (label) {
+    Vector2 measure = measure_text(label, text_scale);
     int text_x = x + (w - measure.x) / 2;
     int text_y = y + (h - measure.y) / 2;
-    print_text(text_x, text_y, text_scale_, label_, LCD_BLACK);
+    print_text(text_x, text_y, text_scale, label, LCD_BLACK);
   }
 }

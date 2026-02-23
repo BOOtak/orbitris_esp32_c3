@@ -49,12 +49,13 @@ int ButtonGridManager::update() {
   }
 
   if (input_detected) {
-    int prev_button_index = grid_map_[prev_r * cols_ + prev_c];
+    int prev_button_index = get_index(prev_r * cols_ + prev_c);
+
     int target_r = prev_r + dir_r;
     int target_c = prev_c + dir_c;
 
     while (target_r >= 0 && target_r < rows_ && target_c >= 0 && target_c < cols_) {
-      int current_cell_index = grid_map_[target_r * cols_ + target_c];
+      int current_cell_index = get_index(target_r * cols_ + target_c);
 
       if (current_cell_index != BUTTON_NO_ACTION && current_cell_index != prev_button_index) {
         // Found a new, valid button!
@@ -71,21 +72,21 @@ int ButtonGridManager::update() {
 
   if (is_key_pressed(ESP_KEY_A)) {
     action_was_pressed_ = true;
-    int index = grid_map_[focused_grid_row_ * cols_ + focused_grid_col_];
+    int index = get_index(focused_grid_row_ * cols_ + focused_grid_col_);
 
     if (index != BUTTON_NO_ACTION && index < count_) {
-      all_buttons_[index].set_state(ButtonState::pressed);
+      all_buttons_[index].state = ButtonState::pressed;
     }
   }
 
   if (is_key_released(ESP_KEY_A) && action_was_pressed_) {
-    int index = grid_map_[focused_grid_row_ * cols_ + focused_grid_col_];
+    int index = get_index(focused_grid_row_ * cols_ + focused_grid_col_);
 
     // Store the ID to be returned
-    action_id = all_buttons_[index].get_id();
+    action_id = all_buttons_[index].id;
 
     // Revert to focused state
-    all_buttons_[index].set_state(ButtonState::focused);
+    all_buttons_[index].state = ButtonState::focused;
   }
 
   if (anim_timer_ < ANIMATION_FRAMES) {
@@ -108,17 +109,17 @@ void ButtonGridManager::init_focus() {
   int prev_c = focused_grid_col_;
   int prev_button_index = BUTTON_NO_ACTION;
   if (prev_c != BUTTON_NO_ACTION && prev_r != BUTTON_NO_ACTION) {
-    prev_button_index = grid_map_[prev_r * cols_ + prev_c];
+    prev_button_index = get_index(prev_r * cols_ + prev_c);
   }
 
   // Set initial focus to the first valid button in the map
   for (int r = 0; r < rows_; ++r) {
     for (int c = 0; c < cols_; ++c) {
-      if (grid_map_[r * cols_ + c] != BUTTON_NO_ACTION) {
+      if (get_index(r * cols_ + c) != BUTTON_NO_ACTION) {
         focused_grid_row_ = r;
         focused_grid_col_ = c;
 
-        int initial_index = grid_map_[r * cols_ + c];
+        int initial_index = get_index(r * cols_ + c);
         anim_target_rect_ = get_animation_rect(initial_index);
         current_focus_rect_ = anim_target_rect_;
         anim_start_rect_ = current_focus_rect_;
@@ -134,12 +135,12 @@ void ButtonGridManager::init_focus() {
 void ButtonGridManager::update_focus_state_logic(int old_index, int new_index) {
   // 1. Update visual state of old button
   if (old_index != BUTTON_NO_ACTION && old_index < count_) {
-    all_buttons_[old_index].set_state(ButtonState::idle);
+    all_buttons_[old_index].state = ButtonState::idle;
   }
 
   // 2. Update visual state of new button
   if (new_index != BUTTON_NO_ACTION && new_index < count_) {
-    all_buttons_[new_index].set_state(ButtonState::focused);
+    all_buttons_[new_index].state = ButtonState::focused;
   }
 
   // 3. Animation Setup
@@ -174,8 +175,16 @@ void ButtonGridManager::draw_animated_focus_frame() const {
   draw_rectangle_lines(x, y, w, h, LCD_BLACK);
 }
 
+int ButtonGridManager::get_index(int idx) {
+  if (grid_map_) {
+    return grid_map_[idx];
+  } else {
+    return idx;
+  }
+}
+
 Rectangle ButtonGridManager::get_animation_rect(int index) const {
   constexpr int offset = 2;
-  const Rectangle &r = all_buttons_[index].get_rect();
+  const Rectangle &r = all_buttons_[index].rect;
   return { r.x - offset, r.y - offset, r.width + offset * 2, r.height + offset * 2 };
 }
