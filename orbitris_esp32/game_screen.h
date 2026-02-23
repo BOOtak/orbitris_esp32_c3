@@ -37,6 +37,7 @@ private:
   float target_zoom_;
   int status_text_frame_{ STATUS_TEXT_FRAMES };
   bool is_exploding_{};
+  bool speed_up_{};
   const char* status_text_{};
   bool is_playing_game_over_animation_{};
   int game_over_animation_frame_{};

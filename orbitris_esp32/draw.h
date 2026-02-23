@@ -50,6 +50,8 @@ void draw_rectangle_lines_pattern(const Rectangle& rect, uint8_t pattern_size, u
  */
 void draw_line(int x0, int y0, int x1, int y1, int color);
 
+void draw_hline(int x, int y, int length, int color);
+
 int draw_line_pattern(int x0, int y0, int x1, int y1, int pattern_state, uint8_t pattern_size, uint8_t pattern);
 
 /**
@@ -63,5 +65,7 @@ int draw_line_pattern(int x0, int y0, int x1, int y1, int pattern_state, uint8_t
  * @param color Text color.
  */
 void print_text(int x, int y, int scale, const char* text, int color);
+
+void print_text(int x, int y, int scale, const char* text, int color, bool extended_font);
 
 Vector2 measure_text(const char* text, int scale);

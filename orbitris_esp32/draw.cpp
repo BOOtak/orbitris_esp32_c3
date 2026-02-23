@@ -242,6 +242,18 @@ void draw_line(int x0, int y0, int x1, int y1, int color) {
   }
 }
 
+void draw_hline(int x, int y, int length, int color) {
+  if (g_should_scale) {
+    x = ((x - CENTER_X) * g_scale) + CENTER_X;
+    y = ((y - CENTER_Y) * g_scale) + CENTER_Y;
+    length *= g_scale;
+  }
+
+  for (int cx = x; cx < x + length; cx++) {
+    draw_pixel_masked(cx, y, color);
+  }
+}
+
 int draw_line_pattern(int x0, int y0, int x1, int y1, int pattern_state, uint8_t pattern_size, uint8_t pattern) {
   if (g_should_scale) {
     x0 = ((x0 - CENTER_X) * g_scale) + CENTER_X;
@@ -272,16 +284,7 @@ int draw_line_pattern(int x0, int y0, int x1, int y1, int pattern_state, uint8_t
   return pattern_state;
 }
 
-/**
- * @brief Draws a single character bitmap to the LCD with scaling.
- */
-void draw_char(int draw_x, int draw_y, int scale, uint8_t char_code, int color) {
-  int index = char_code - FONT_START_CHAR;
-  if (index < 0 || index >= FONT_MAP_SIZE) {
-    index = 0;
-  }
-
-  const uint8_t* char_data = charmap[index];
+static void draw_char_data(int draw_x, int draw_y, int scale, const uint8_t* char_data, int color) {
 
   // Use fixed-point arithmetics (16.16)
   // TODO: use struct/unions?
@@ -313,8 +316,36 @@ void draw_char(int draw_x, int draw_y, int scale, uint8_t char_code, int color) 
   }
 }
 
+/**
+ * @brief Draws a single character bitmap to the LCD with scaling.
+ */
+void draw_char(int draw_x, int draw_y, int scale, uint8_t char_code, int color) {
+  int index = char_code - FONT_START_CHAR;
+  if (index < 0 || index >= FONT_MAP_SIZE) {
+    index = 0;
+  }
+
+  const uint8_t* char_data = charmap[index];
+  draw_char_data(draw_x, draw_y, scale, char_data, color);
+}
+
+void draw_char_ex(int draw_x, int draw_y, int scale, uint8_t char_code, int color) {
+  if (char_code >= EXTENDED_CHARMAP_SIZE) {
+    char_code = 0;
+  }
+
+  const uint8_t* char_data = extended_charmap[char_code];
+  draw_char_data(draw_x, draw_y, scale, char_data, color);
+}
+
 void print_text(int x, int y, int scale, const char* text, int color) {
-  if (scale < 1) return;
+  return print_text(x, y, scale, text, color, false);
+}
+
+void print_text(int x, int y, int scale, const char* text, int color, bool extended_font) {
+  if (scale < 1) {
+    return;
+  }
 
   const int scaled_char_width = FONT_CHAR_WIDTH * scale;
   const int scaled_char_height = FONT_CHAR_HEIGHT * scale;
@@ -328,7 +359,9 @@ void print_text(int x, int y, int scale, const char* text, int color) {
     if (current_char == '\n') {
       current_x = x;
       current_y += scaled_char_height;
-      if (current_y + scaled_char_height > LCD_HEIGHT) break;
+      if (current_y + scaled_char_height > LCD_HEIGHT) {
+        break;
+      }
       continue;
     }
 
@@ -336,7 +369,11 @@ void print_text(int x, int y, int scale, const char* text, int color) {
       break;
     }
 
-    draw_char(current_x, current_y, scale, current_char, color);
+    if (extended_font) {
+      draw_char_ex(current_x, current_y, scale, current_char, color);
+    } else {
+      draw_char(current_x, current_y, scale, current_char, color);
+    }
     current_x += scaled_char_width;
   }
 }

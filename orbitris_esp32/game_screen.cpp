@@ -24,9 +24,9 @@ constexpr int resolution_min = 1;  // times per frame
 constexpr int resolution_max = 10;
 constexpr int d_resolution = resolution_max - resolution_min;
 
-constexpr float dist_max = 1.496E11f;
-constexpr float dist_min = 3.5E8f;
-constexpr float d_dist = dist_max - dist_min;
+constexpr float DIST_MAX = 1.496E11f;
+constexpr float DIST_MIN = 3.5E8f;
+constexpr float d_dist = DIST_MAX - DIST_MIN;
 
 constexpr float SCALE_MIN_DIST = LCD_HEIGHT * 1.5f;
 constexpr float SCALE_MAX_DIST = LCD_HEIGHT / 2.0f;
@@ -39,6 +39,9 @@ constexpr auto trajectory_size = 50;
 
 constexpr float PROGRESS_SPEED = 0.05f;
 constexpr float DIST_THRESHOLD = 0.0001f;
+
+constexpr float DELTA_TIME_MIN = 3600.0f * 24;
+constexpr float DELTA_TIME_MAX = 7200.0f * 24;
 
 constexpr float MAX_PIECE_DISTANCE_SQUARE = LCD_HEIGHT * LCD_HEIGHT * 4;
 
@@ -62,6 +65,7 @@ void GameScreen::init() {
 
   sliding_tetramino_ = {};
   is_exploding_ = false;
+  speed_up_ = false;
   is_playing_game_over_animation_ = false;
   game_over_animation_frame_ = 0;
 
@@ -78,7 +82,7 @@ void GameScreen::init() {
   }
 
   reset_planet_state();
-  delta_time_ = 3600 * 24;
+  delta_time_ = DELTA_TIME_MIN;
 
   current_zoom_ = 1.0f;
   target_zoom_ = 1.0f;
@@ -156,8 +160,16 @@ Screen* GameScreen::update() {
     return screens::pause_screen;
   }
 
-  if (is_key_pressed(ESP_KEY_B)) {
-    is_playing_game_over_animation_ = true;
+  if (is_key_down(ESP_KEY_B) && planet_state_.distance.value >= DIST_MAX / 2) {
+    speed_up_ = true;
+  } else {
+    speed_up_ = false;
+  }
+
+  if (speed_up_) {
+    delta_time_ = DELTA_TIME_MAX;
+  } else {
+    delta_time_ = DELTA_TIME_MIN;
   }
 
   if (is_exploding_) {
@@ -210,6 +222,32 @@ void GameScreen::draw() const {
   print_text(310, 8, 2, score_buf, 0);
   print_text(10, 8, 2, "Next:", 0);
 
+  if (speed_up_) {
+    print_text(10, 30, 2, "\x01\x01", LCD_BLACK, true);
+    constexpr auto hlines_count = 10;
+    constexpr auto hline_y_1 = 50;
+    constexpr auto hline_y_2 = 180;
+    constexpr auto hline_dy = 3;
+    for (size_t i = 0; i < hlines_count; i++) {
+      int dy = get_random_value(0, hline_dy);
+      int start_x = get_random_value(0, LCD_WIDTH);
+      int end_x = 0;
+      if (start_x & 1) {
+        end_x = get_random_value(start_x, LCD_WIDTH);
+      } else {
+        end_x = start_x;
+        start_x = get_random_value(0, end_x);
+      }
+
+      int start_y = hline_y_1;
+      if (i & 1) {
+        start_y = hline_y_2;
+      }
+
+      draw_hline(start_x, start_y + dy, end_x - start_x, LCD_BLACK);
+    }
+  }
+
   if (status_text_frame_ < STATUS_TEXT_FRAMES) {
     constexpr int text_y_offset = 10;
     Vector2 text_size = measure_text(status_text_, 2);
@@ -229,13 +267,15 @@ void GameScreen::close() {
  * approx. 20 us
  */
 int GameScreen::get_resolution(const PlanetState& planet) {
-  float targetDist = std::clamp(planet.distance.value, dist_min, dist_max);
-  return (int)remap(targetDist, dist_min, dist_max, resolution_max, resolution_min);
+  float targetDist = std::clamp(planet.distance.value, DIST_MIN, DIST_MAX);
+  auto distance_resolution = remap(targetDist, DIST_MIN, DIST_MAX, resolution_max, resolution_min);
+  auto dt_resolution = remap(delta_time_, DELTA_TIME_MIN, DELTA_TIME_MAX, 1.0f, 2.0f);
+  return (int)(distance_resolution * dt_resolution);
 }
 
 void GameScreen::reset_planet_state() {
   planet_state_ = {};
-  planet_state_.distance.value = 1.496E11f;
+  planet_state_.distance.value = DIST_MAX;
   planet_state_.angle.speed = 1.990986E-7f;
 }
 
