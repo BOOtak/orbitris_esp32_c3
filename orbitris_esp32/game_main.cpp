@@ -75,7 +75,7 @@ void init_game() {
   screens::game_over_screen = new GameOverScreen(stats, highscores);
   screens::menu_screen = new MenuScreen(stats);
   screens::pause_screen = new PauseScreen();
-  screens::highscore_input_screen = new HighscoreInputScreen();
+  screens::highscore_input_screen = new HighscoreInputScreen(stats, highscores);
 
   if (stats.in_game) {
     current_screen = screens::game_screen;

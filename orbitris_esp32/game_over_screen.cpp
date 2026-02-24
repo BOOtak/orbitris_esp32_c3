@@ -16,17 +16,15 @@ void GameOverScreen::init() {
   text_size_ = measure_text(score_buffer_, 2);
   stats_.in_game = false;
   persist_stats(stats_);
-
-  if (highscores_.is_highscore(stats_.game_points)) {
-    // TODO: enter highscore on the dedicated screen
-    highscores_.add_highscore("Nagibator", stats_.game_points);
-    persist_highscores(highscores_);
-  }
 }
 
 Screen *GameOverScreen::update() {
   if (is_key_pressed(ESP_KEY_A)) {
-    return screens::menu_screen;
+    if (highscores_.is_highscore(stats_.game_points)) {
+      return screens::highscore_input_screen;
+    } else {
+      return screens::menu_screen;
+    }
   }
 
   return this;

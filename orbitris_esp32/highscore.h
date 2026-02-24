@@ -15,8 +15,11 @@ struct HighscoreEntry {
 #pragma pack(pop)
 
 struct HighscoreTable {
+  static constexpr auto NO_LAST_NAME_INDEX = (uint8_t)-1;
+
   std::array<std::array<char, HIGHSCORE_NAME_SIZE>, HIGHSCORE_ENTRIES> names;
   std::array<HighscoreEntry, HIGHSCORE_ENTRIES> data;
+  uint8_t last_name_index{ NO_LAST_NAME_INDEX };
 
   inline bool is_highscore(uint32_t score) const {
     if (score == 0) {
@@ -81,6 +84,8 @@ struct HighscoreTable {
     names[name_index][HIGHSCORE_NAME_SIZE - 1] = '\0';
     data[insert_idx].name_index = (uint8_t)name_index;
     data[insert_idx].score = score;
+
+    last_name_index = name_index;
 
     return true;
   }

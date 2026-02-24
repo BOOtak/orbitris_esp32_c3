@@ -4,6 +4,7 @@
 #include "const.h"
 #include "draw.h"
 #include "input.h"
+#include "persist.h"
 
 #include <array>
 
@@ -35,8 +36,11 @@ constexpr int char_indices[] = {
   'Z', 'X', 'C', 'V', 'B', 'N', 'M', ID_LEFT, ID_RIGHT, ' '
 };
 
-HighscoreInputScreen::HighscoreInputScreen()
-  : Screen(), keyboard_{
+HighscoreInputScreen::HighscoreInputScreen(const Stats &stats, HighscoreTable &highscores)
+  : Screen(),
+    stats_{ stats },
+    highscores_{ highscores },
+    keyboard_{
       { { start_x + dx * 0, start_y + dy * 0, button_width, button_height }, "1", 2, 0 },
       { { start_x + dx * 1, start_y + dy * 0, button_width, button_height }, "2", 2, 1 },
       { { start_x + dx * 2, start_y + dy * 0, button_width, button_height }, "3", 2, 2 },
@@ -85,17 +89,25 @@ HighscoreInputScreen::HighscoreInputScreen()
 }
 
 void HighscoreInputScreen::init() {
-  name_ = {};
-  cursor_position_ = 0;
+  if (highscores_.last_name_index != HighscoreTable::NO_LAST_NAME_INDEX) {
+    name_ = highscores_.names[highscores_.last_name_index];
+  } else {
+    std::strcpy(name_.data(), "FLOP");
+  }
+  cursor_position_ = std::strlen(name_.data());
 }
 
 Screen *HighscoreInputScreen::update() {
   int index = manager_.update();
   switch (index) {
     case ID_ENTER:
-      // TODO: persist new high score
-      // TODO[1]: show high score list
-      return screens::menu_screen;
+      if (name_[0] != '\0') {
+        if (highscores_.add_highscore(name_.data(), stats_.game_points)) {
+          persist_highscores(highscores_);
+        }
+        // TODO: return highscore table screen
+        return screens::menu_screen;
+      }
       break;
     case ID_LEFT:
       if (cursor_position_ > 0) {
@@ -142,10 +154,16 @@ Screen *HighscoreInputScreen::update() {
 void HighscoreInputScreen::draw() const {
   fill_screen_buffer(LCD_WHITE);
 
+  constexpr auto prompt = "Name: ";
+  constexpr auto prompt_size = measure_text(prompt, 2);
+
   constexpr auto text_size = measure_text("                ", 2);
   constexpr Vector2 name_start = { (LCD_WIDTH - 16 * FONT_CHAR_WIDTH * 2) / 2, (start_y - text_size.y) / 2 };
   print_text(name_start.x, name_start.y, 2, name_.data(), LCD_BLACK);
   print_text(name_start.x + cursor_position_ * FONT_CHAR_WIDTH * 2, name_start.y + 4, 2, "_", LCD_BLACK);
+
+  constexpr auto prompt_start_x = name_start.x - prompt_size.x;
+  print_text(prompt_start_x, name_start.y, 2, prompt, LCD_BLACK);
 
   constexpr Vector2 frame_margin = { 4.0f, 6.0f };
   constexpr auto frame_start = name_start - frame_margin;
