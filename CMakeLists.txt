@@ -29,6 +29,7 @@ add_executable(${PROJECT_NAME}
     orbitris_esp32/game_screen.cpp
     orbitris_esp32/game_utils.cpp
     orbitris_esp32/highscore_input_screen.cpp
+    orbitris_esp32/highscore_screen.cpp
     orbitris_esp32/orbital.cpp
     orbitris_esp32/menu_screen.cpp
     orbitris_esp32/pause_screen.cpp

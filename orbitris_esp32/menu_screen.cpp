@@ -9,11 +9,11 @@
 #include "screen.h"
 
 const char* label_new_game = "New game";
-const char* label_settings = "Settings";
+const char* label_highscores = "Highscores";
 const char* label_authors = "Authors";
 
 constexpr int id_new_game = 0;
-constexpr int id_settings = 1;
+constexpr int id_highscores = 1;
 constexpr int id_authors = 2;
 
 constexpr int button_width = 150;
@@ -28,10 +28,10 @@ MenuScreen::MenuScreen(Stats& stats)
     stats_(stats),
     menu_buttons_{
       { { start_x, start_y + delta_y * 0, button_width, button_height }, label_new_game, 2, id_new_game },
-      { { start_x, start_y + delta_y * 1, button_width, button_height }, label_settings, 2, id_settings },
+      { { start_x, start_y + delta_y * 1, button_width, button_height }, label_highscores, 2, id_highscores },
       { { start_x, start_y + delta_y * 2, button_width, button_height }, label_authors, 2, id_authors }
     },
-    grid_map_{ id_new_game, id_settings, id_authors },
+    grid_map_{ id_new_game, id_highscores, id_authors },
     manager_{ menu_buttons_, std::size(menu_buttons_), grid_map_, 3, 1 } {
 }
 
@@ -48,6 +48,9 @@ Screen* MenuScreen::update() {
   switch (button_id) {
     case id_new_game:
       return screens::game_screen;
+      break;
+    case id_highscores:
+      return screens::highscore_screen;
       break;
     default:
       break;

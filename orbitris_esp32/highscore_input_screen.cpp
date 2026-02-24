@@ -105,8 +105,7 @@ Screen *HighscoreInputScreen::update() {
         if (highscores_.add_highscore(name_.data(), stats_.game_points)) {
           persist_highscores(highscores_);
         }
-        // TODO: return highscore table screen
-        return screens::menu_screen;
+        return screens::highscore_screen;
       }
       break;
     case ID_LEFT:

@@ -14,4 +14,5 @@ Screen* game_over_screen = nullptr;
 Screen* menu_screen = nullptr;
 Screen* pause_screen = nullptr;
 Screen* highscore_input_screen = nullptr;
+Screen* highscore_screen = nullptr;
 }

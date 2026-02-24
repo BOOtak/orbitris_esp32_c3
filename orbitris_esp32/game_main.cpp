@@ -6,6 +6,7 @@
 #include "game_over_screen.h"
 #include "game_utils.h"
 #include "highscore_input_screen.h"
+#include "highscore_screen.h"
 #include "menu_screen.h"
 #include "persist.h"
 #include "pause_screen.h"
@@ -13,6 +14,12 @@
 #include "stats.h"
 #include "table_math.h"
 #include "transition.h"
+
+#if defined(PRIVATE_BUILD)
+#include "default_scores_private.h"
+#else
+#include "default_scores.h"
+#endif
 
 Screen* current_screen = nullptr;
 Screen* new_screen = nullptr;
@@ -28,6 +35,7 @@ TransitionParams default_params = { TransitionKind::ZOOM_IN, 1.0f / 25 };
 TransitionRule rules[]{
   { screens::pause_screen, screens::game_screen, { TransitionKind::NONE, 1.0f } },
   { screens::game_screen, screens::pause_screen, { TransitionKind::NONE, 1.0f } },
+  { screens::highscore_screen, screens::menu_screen, { TransitionKind::ZOOM_OUT, 1.0f / 25 } },
   { screens::game_screen, screens::game_over_screen, { TransitionKind::ZOOM_OUT, 1.0f / 60 } },
   { screens::game_over_screen, screens::game_screen, { TransitionKind::ZOOM_IN, 1.0f / 25 } }
 };
@@ -64,7 +72,7 @@ void init_game() {
   init_trig_tables();
 
   if (!load_highscores(highscores)) {
-    highscores = {};
+    highscores = init_highscores;
   }
 
   if (!load_stats(stats) || !stats.in_game) {
@@ -76,6 +84,7 @@ void init_game() {
   screens::menu_screen = new MenuScreen(stats);
   screens::pause_screen = new PauseScreen();
   screens::highscore_input_screen = new HighscoreInputScreen(stats, highscores);
+  screens::highscore_screen = new HighscoreTableScreen(highscores);
 
   if (stats.in_game) {
     current_screen = screens::game_screen;

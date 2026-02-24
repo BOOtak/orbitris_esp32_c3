@@ -21,4 +21,5 @@ extern Screen* game_over_screen;
 extern Screen* menu_screen;
 extern Screen* pause_screen;
 extern Screen* highscore_input_screen;
+extern Screen* highscore_screen;
 }
