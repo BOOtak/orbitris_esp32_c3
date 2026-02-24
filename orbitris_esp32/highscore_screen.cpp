@@ -22,14 +22,14 @@ Screen *HighscoreTableScreen::update() {
 }
 
 void HighscoreTableScreen::draw() const {
-  fill_screen_buffer(1);
+  fill_screen_buffer(LCD_WHITE);
 
   constexpr auto title_text = "HIGHSCORES";
   constexpr auto title_size = measure_text(title_text, 3);
   constexpr int title_x = LCD_WIDTH / 2 - title_size.x / 2;
   constexpr int title_y = 5;
 
-  print_text(title_x, title_y, 3, title_text, 0);
+  print_text(title_x, title_y, 3, title_text, LCD_BLACK);
 
   constexpr auto rank_header = "RANK";
   constexpr auto name_header = "NAME";
@@ -41,19 +41,19 @@ void HighscoreTableScreen::draw() const {
 
   constexpr int headers_y = title_y + title_size.y + 10;
   constexpr int rank_x = 20;
-  print_text(rank_x, headers_y, 2, rank_header, 0);
+  print_text(rank_x, headers_y, 2, rank_header, LCD_BLACK);
 
   constexpr int name_x = rank_x + rank_header_size.x + 30;
-  print_text(name_x, headers_y, 2, name_header, 0);
+  print_text(name_x, headers_y, 2, name_header, LCD_BLACK);
 
   constexpr int score_x = LCD_WIDTH - 20 - score_header_size.x;
-  print_text(score_x, headers_y, 2, score_header, 0);
+  print_text(score_x, headers_y, 2, score_header, LCD_BLACK);
 
   constexpr int table_start_x = rank_x - 5;
   constexpr int table_width = (score_x + score_header_size.x) - (rank_x - 5) + 5;
 
   constexpr int separator_y = headers_y + rank_header_size.y + 5;
-  draw_hline(table_start_x, separator_y, table_width, 0);
+  draw_hline(table_start_x, separator_y, table_width, LCD_BLACK);
 
   constexpr int entries_start_y = separator_y + 10;
   constexpr int line_height = 20;
@@ -65,7 +65,7 @@ void HighscoreTableScreen::draw() const {
     constexpr auto no_scores_size = measure_text(no_scores, 2);
     print_text(LCD_WIDTH / 2 - no_scores_size.x / 2,
                LCD_HEIGHT / 2 - no_scores_size.y / 2,
-               2, no_scores, 0);
+               2, no_scores, LCD_BLACK);
     return;
   }
 
@@ -78,11 +78,11 @@ void HighscoreTableScreen::draw() const {
 
     snprintf(buffer, sizeof(buffer), "%d", i + 1);
     constexpr auto max_rank_size = measure_text("8", 2);
-    print_text(rank_x + rank_header_size.x - max_rank_size.x, y_pos, 2, buffer, 0);
+    print_text(rank_x + rank_header_size.x - max_rank_size.x, y_pos, 2, buffer, LCD_BLACK);
 
     uint8_t name_idx = highscores_.data[i].name_index;
     const char *name = highscores_.names[name_idx].data();
-    print_text(name_x, y_pos, 2, name, 0);
+    print_text(name_x, y_pos, 2, name, LCD_BLACK);
 
     int score = highscores_.data[i].score;
 
@@ -93,9 +93,9 @@ void HighscoreTableScreen::draw() const {
     }
 
     const auto score_size = measure_text(buffer, 2);
-    print_text(score_x + score_header_size.x - score_size.x, y_pos, 2, buffer, 0);
+    print_text(score_x + score_header_size.x - score_size.x, y_pos, 2, buffer, LCD_BLACK);
   }
 
   constexpr int last_entry_y = entries_start_y + (HIGHSCORE_ENTRIES * line_height) - line_height;
-  draw_hline(table_start_x, last_entry_y + line_height, table_width, 0);
+  draw_hline(table_start_x, last_entry_y + line_height, table_width, LCD_BLACK);
 }
