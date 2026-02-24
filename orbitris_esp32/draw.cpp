@@ -87,7 +87,7 @@ void draw_pixel(int x, int y, int color) {
   draw_pixel_masked(x, y, color);
 }
 
-void fill_scrfeen_buffer(int color) {
+void fill_screen_buffer(int color) {
   if (g_should_mask) {
     for (size_t i = 0; i < LCD_HEIGHT; i++) {
       lcd_fill_line(i, g_draw_mask.mask[i & 7], color);

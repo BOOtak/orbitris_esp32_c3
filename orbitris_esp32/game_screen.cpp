@@ -202,7 +202,7 @@ Screen* GameScreen::update() {
 }
 
 void GameScreen::draw() const {
-  fill_scrfeen_buffer(1);
+  fill_screen_buffer(1);
 
   begin_scale(current_zoom_);
   draw_trajectory();

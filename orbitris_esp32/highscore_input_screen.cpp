@@ -89,6 +89,6 @@ Screen *HighscoreInputScreen::update() {
 }
 
 void HighscoreInputScreen::draw() const {
-  fill_scrfeen_buffer(LCD_WHITE);
+  fill_screen_buffer(LCD_WHITE);
   manager_.draw();
 }

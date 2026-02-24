@@ -33,7 +33,7 @@ Screen *GameOverScreen::update() {
 }
 
 void GameOverScreen::draw() const {
-  fill_scrfeen_buffer(1);
+  fill_screen_buffer(1);
 
   const int text_x = LCD_WIDTH / 2 - text_size_.x / 2;
   const int text_y = LCD_HEIGHT / 2 - text_size_.y / 2;
