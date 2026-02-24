@@ -8,10 +8,10 @@
 #define IDX_RIGHT 3
 #define IDX_A 4
 #define IDX_B 5
-#define IDX_MAX IDX_B
+#define BUTTONS_COUNT IDX_B + 1
 
-static bool btn_states_prev[IDX_MAX]{};
-static bool btn_states[IDX_MAX]{};
+static bool btn_states_prev[BUTTONS_COUNT]{};
+static bool btn_states[BUTTONS_COUNT]{};
 
 void input_init() {
   pinMode(ESP_KEY_UP, INPUT_PULLUP);
