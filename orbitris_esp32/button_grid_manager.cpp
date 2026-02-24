@@ -24,7 +24,7 @@ constexpr DirectionInfo directions[DIR_COUNT] = {
 };
 
 ButtonGridManager::ButtonGridManager(
-  Button *buttons, size_t count, int *custom_map, size_t rs, size_t cs)
+  Button *buttons, size_t count, int *custom_map, size_t rs, size_t cs, bool act_on_press)
   : all_buttons_(buttons),
     count_(count),
     grid_map_(custom_map),
@@ -33,7 +33,8 @@ ButtonGridManager::ButtonGridManager(
     focused_grid_row_(BUTTON_NO_ACTION),
     focused_grid_col_(BUTTON_NO_ACTION),
     anim_timer_(0),
-    action_was_pressed_(false),
+    action_was_pressed_{false},
+    act_on_press_{act_on_press},
     repeat_state_{},
     repeat_timer_{} {
   init_focus();
@@ -132,17 +133,20 @@ int ButtonGridManager::update() {
 
     if (index != BUTTON_NO_ACTION && index < count_) {
       all_buttons_[index].state = ButtonState::pressed;
+      if (act_on_press_) {
+        action_id = all_buttons_[index].id;
+      }
     }
   }
 
   if (is_key_released(ESP_KEY_A) && action_was_pressed_) {
     int index = get_index(focused_grid_row_ * cols_ + focused_grid_col_);
-
-    // Store the ID to be returned
-    action_id = all_buttons_[index].id;
-
-    // Revert to focused state
-    all_buttons_[index].state = ButtonState::focused;
+    if (index != BUTTON_NO_ACTION && index < count_) {
+      all_buttons_[index].state = ButtonState::focused;
+      if (!act_on_press_) {
+        action_id = all_buttons_[index].id;
+      }
+    }
   }
 
   if (anim_timer_ < ANIMATION_FRAMES) {

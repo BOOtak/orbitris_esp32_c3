@@ -7,24 +7,24 @@ struct Vector2 {
   float y;
 };
 
-inline Vector2 operator+(const Vector2& v1, const Vector2& v2) {
+constexpr Vector2 operator+(const Vector2& v1, const Vector2& v2) {
   return { v1.x + v2.x, v1.y + v2.y };
 }
 
-inline Vector2 operator*(const Vector2& v, float scale) {
+constexpr Vector2 operator*(const Vector2& v, float scale) {
   return { v.x * scale, v.y * scale };
 }
 
-inline void operator*=(Vector2& v, float scale) {
+constexpr void operator*=(Vector2& v, float scale) {
   v.x *= scale;
   v.y *= scale;
 }
 
-inline Vector2 operator-(const Vector2& v1, const Vector2& v2) {
+constexpr Vector2 operator-(const Vector2& v1, const Vector2& v2) {
   return { v1.x - v2.x, v1.y - v2.y };
 }
 
-inline void operator+=(Vector2& v1, const Vector2& v2) {
+constexpr void operator+=(Vector2& v1, const Vector2& v2) {
   v1.x += v2.x;
   v1.y += v2.y;
 }

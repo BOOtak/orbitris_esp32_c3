@@ -1,12 +1,9 @@
 #include "draw.h"
 
-#include <algorithm>
 #include <cmath>
 #include <cstdlib>
-#include <cstdint>
 #include <cstring>
 
-#include "charmap.h"
 #include "const.h"
 
 constexpr int FONT_MAP_SIZE = FONT_END_CHAR - FONT_START_CHAR + 1;
@@ -378,21 +375,3 @@ void print_text(int x, int y, int scale, const char* text, int color, bool exten
   }
 }
 
-Vector2 measure_text(const char* text, int scale) {
-  int lines = 1;
-  int columns = 0;
-  int current_line_columns = 0;
-  for (const char* p = text; *p != '\0'; ++p) {
-    current_line_columns++;
-    if (*p == '\n') {
-      lines++;
-      columns = std::max(columns, current_line_columns);
-      current_line_columns = 0;
-    }
-  }
-
-  columns = std::max(columns, current_line_columns);
-
-  return { (float)columns * scale * (FONT_CHAR_WIDTH),
-           (float)lines * scale * FONT_CHAR_HEIGHT };
-}

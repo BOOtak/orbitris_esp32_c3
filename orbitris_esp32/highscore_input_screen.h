@@ -1,7 +1,10 @@
 #pragma once
 
+#include <array>
+
 #include "screen.h"
 #include "button_grid_manager.h"
+#include "highscore.h"
 
 constexpr auto KEYS_COUNT = 40;
 
@@ -18,4 +21,6 @@ public:
 private:
   Button keyboard_[KEYS_COUNT];
   ButtonGridManager manager_;
+  std::array<char, HIGHSCORE_NAME_SIZE> name_;
+  int cursor_position_;
 };

@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstring>
 
-constexpr auto NAME_SIZE = 16;
+constexpr auto HIGHSCORE_NAME_SIZE = 16;
 constexpr auto HIGHSCORE_ENTRIES = 8;
 
 #pragma pack(push, 1)
@@ -15,7 +15,7 @@ struct HighscoreEntry {
 #pragma pack(pop)
 
 struct HighscoreTable {
-  std::array<std::array<char, NAME_SIZE>, HIGHSCORE_ENTRIES> names;
+  std::array<std::array<char, HIGHSCORE_NAME_SIZE>, HIGHSCORE_ENTRIES> names;
   std::array<HighscoreEntry, HIGHSCORE_ENTRIES> data;
 
   inline bool is_highscore(uint32_t score) const {
@@ -77,8 +77,8 @@ struct HighscoreTable {
       data[i].name_index = data[i - 1].name_index;
     }
 
-    std::strncpy(names[name_index].data(), name, NAME_SIZE - 1);
-    names[name_index][NAME_SIZE - 1] = '\0';
+    std::strncpy(names[name_index].data(), name, HIGHSCORE_NAME_SIZE - 1);
+    names[name_index][HIGHSCORE_NAME_SIZE - 1] = '\0';
     data[insert_idx].name_index = (uint8_t)name_index;
     data[insert_idx].score = score;
 

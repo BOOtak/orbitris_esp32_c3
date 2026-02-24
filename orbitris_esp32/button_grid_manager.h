@@ -24,7 +24,7 @@ enum class RepeatState {
 class ButtonGridManager {
 public:
 
-  ButtonGridManager(Button* buttons, size_t count, int* custom_map, size_t rs, size_t cs);
+  ButtonGridManager(Button* buttons, size_t count, int* custom_map, size_t rs, size_t cs, bool act_on_press = false);
 
   void init();
 
@@ -53,6 +53,7 @@ private:
   int anim_timer_;
 
   bool action_was_pressed_;
+  bool act_on_press_;
 
   RepeatState repeat_state_[Direction::DIR_COUNT];
   int repeat_timer_[Direction::DIR_COUNT];
