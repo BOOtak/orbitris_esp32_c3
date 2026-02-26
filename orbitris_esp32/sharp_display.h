@@ -24,6 +24,8 @@ void lcd_clear();
  */
 void lcd_draw_pixel(int x, int y, int color);
 
+void lcd_set_byte(int cx, int y, uint8_t value);
+
 /**
  * @brief Fills the local framebuffer with a single color (0 for white, 1 for black).
  * @param color The color to fill (0 or 1).

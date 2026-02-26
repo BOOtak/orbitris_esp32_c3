@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include "const.h"
+#include "sharp_display.h"
 
 constexpr int FONT_MAP_SIZE = FONT_END_CHAR - FONT_START_CHAR + 1;
 
@@ -19,12 +20,6 @@ static float g_scale = 1.0f;
 // Draw masking
 static bool g_should_mask = false;
 static DrawMask g_draw_mask = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-
-extern void lcd_draw_pixel(int x, int y, int color);
-
-extern void lcd_fill_buffer(int color);
-
-extern void lcd_fill_line(int line, uint8_t pattern, int color);
 
 static void update_scale() {
   g_scale = g_draw_scale * g_screen_scale;
@@ -375,3 +370,10 @@ void print_text(int x, int y, int scale, const char* text, int color, bool exten
   }
 }
 
+void draw_bitmap(const uint8_t* bitmap) {
+  for (size_t y = 0; y < LCD_HEIGHT; y++) {
+    for (size_t x = 0; x < LCD_WIDTH / 8; x++) {
+      lcd_set_byte(x, y, bitmap[y * LCD_WIDTH / 8 + x]);
+    }
+  }
+}

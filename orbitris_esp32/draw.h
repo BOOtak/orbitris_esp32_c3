@@ -251,3 +251,5 @@ constexpr Vector2 measure_text(const char* text, int scale) {
   return { (float)columns * scale * (FONT_CHAR_WIDTH),
            (float)lines * scale * FONT_CHAR_HEIGHT };
 }
+
+void draw_bitmap(const uint8_t* bitmap);

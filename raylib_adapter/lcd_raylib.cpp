@@ -9,6 +9,13 @@ void lcd_draw_pixel(int x, int y, int color) {
   DrawPixel(x, y, color == 1 ? WHITE : BLACK);
 }
 
+void lcd_set_byte(int cx, int y, uint8_t value) {
+  for (size_t i = 0; i < 8; i++) {
+    auto color = value & (0x80 >> (i & 7)) ? WHITE : BLACK;
+    DrawPixel(cx * 8 + i, y, color);
+  }
+}
+
 void lcd_fill_buffer(int color) {
   ClearBackground(color == 1 ? WHITE : BLACK);
 }

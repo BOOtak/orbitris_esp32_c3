@@ -52,6 +52,9 @@ Screen* MenuScreen::update() {
     case id_highscores:
       return screens::highscore_screen;
       break;
+    case id_authors:
+      return screens::authors_screen;
+      break;
     default:
       break;
   }

@@ -15,4 +15,5 @@ Screen* menu_screen = nullptr;
 Screen* pause_screen = nullptr;
 Screen* highscore_input_screen = nullptr;
 Screen* highscore_screen = nullptr;
+Screen* authors_screen = nullptr;
 }

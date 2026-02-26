@@ -102,6 +102,11 @@ void lcd_clear() {
   lcd_toggle_vcom();
 }
 
+void lcd_set_byte(int cx, int y, uint8_t value) {
+  int byte_index = (y * LINE_LENGTH) + LINE_PREFIX_LENGTH + cx;
+  framebuffer[byte_index] = value;
+}
+
 void lcd_fill_buffer(int color) {
   // Sharp LCD logic: 0 = White (Clear), 1 = Black (Set)
   uint8_t value = (color == 1) ? 0xFF : 0x00;

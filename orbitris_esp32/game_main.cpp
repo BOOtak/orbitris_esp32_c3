@@ -2,6 +2,7 @@
 
 #include <array>
 
+#include "authors_screen.h"
 #include "game_screen.h"
 #include "game_over_screen.h"
 #include "game_utils.h"
@@ -33,9 +34,12 @@ struct TransitionRule {
 TransitionParams default_params = { TransitionKind::ZOOM_IN, 1.0f / 25 };
 
 TransitionRule rules[]{
+  { screens::menu_screen, screens::authors_screen, { TransitionKind::NONE, 1.0f } },
   { screens::pause_screen, screens::game_screen, { TransitionKind::NONE, 1.0f } },
   { screens::game_screen, screens::pause_screen, { TransitionKind::NONE, 1.0f } },
+  { screens::pause_screen, screens::menu_screen, { TransitionKind::ZOOM_OUT, 1.0f / 25 } },
   { screens::highscore_screen, screens::menu_screen, { TransitionKind::ZOOM_OUT, 1.0f / 25 } },
+  { screens::authors_screen, screens::menu_screen, { TransitionKind::ZOOM_OUT, 1.0f / 25 } },
   { screens::game_screen, screens::game_over_screen, { TransitionKind::ZOOM_OUT, 1.0f / 60 } },
   { screens::game_over_screen, screens::game_screen, { TransitionKind::ZOOM_IN, 1.0f / 25 } }
 };
@@ -85,6 +89,7 @@ void init_game() {
   screens::pause_screen = new PauseScreen();
   screens::highscore_input_screen = new HighscoreInputScreen(stats, highscores);
   screens::highscore_screen = new HighscoreTableScreen(highscores);
+  screens::authors_screen = new AuthorsScreen();
 
   if (stats.in_game) {
     current_screen = screens::game_screen;

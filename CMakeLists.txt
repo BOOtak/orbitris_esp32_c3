@@ -20,6 +20,7 @@ add_executable(${PROJECT_NAME}
     raylib_adapter/persist_raylib.cpp
     raylib_adapter/trace_printf.cpp
 
+    orbitris_esp32/authors_screen.cpp
     orbitris_esp32/button.cpp
     orbitris_esp32/button_grid_manager.cpp
     orbitris_esp32/draw.cpp
