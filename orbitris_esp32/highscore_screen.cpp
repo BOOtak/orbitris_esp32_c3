@@ -36,7 +36,6 @@ void HighscoreTableScreen::draw() const {
   constexpr auto score_header = "SCORE";
 
   constexpr auto rank_header_size = measure_text(rank_header, 2);
-  constexpr auto name_header_size = measure_text(name_header, 2);
   constexpr auto score_header_size = measure_text(score_header, 2);
 
   constexpr int headers_y = title_y + title_size.y + 10;

@@ -290,7 +290,6 @@ void Tilemap::check_and_flag_oob(size_t i, size_t j) {
 }
 
 void Tilemap::get_tetramino_tilemap_pos_corner(const ActiveTetramino& block, int& x, int& y) const {
-  size_t idx = 0;
   float deltaX = block.pos.x - block.block->center.x * TILE_W - tileMapPosX;
   float deltaY = block.pos.y - block.block->center.y * TILE_H - tileMapPosY;
   int ix = (int)round(deltaX / TILE_W);
@@ -326,8 +325,6 @@ TileBitmap Tilemap::serialize() const {
 
 void Tilemap::get_tetramino_tilemap_pos(const ActiveTetramino& block, int (*coords)[2] /* int[4][2] */) const {
   size_t idx = 0;
-  float deltaX = block.pos.x - block.block->center.x * TILE_W - tileMapPosX;
-  float deltaY = block.pos.y - block.block->center.y * TILE_H - tileMapPosY;
   int ix = 0, iy = 0;
   get_tetramino_tilemap_pos_corner(block, ix, iy);
 
@@ -351,7 +348,8 @@ bool Tilemap::delete_tiles_for_real() {
   for (size_t i = 0; i < TILES_X; i++) {
     if (tile_delete_info_.columns[i]) {
       res = true;
-      size_t di = 1, max_i = TILES_X;
+      int di = 1;
+      size_t max_i = TILES_X;
       if (i < TILES_X / 2) {
         trace("Move right\n");
         di = -1;
@@ -386,7 +384,8 @@ bool Tilemap::delete_tiles_for_real() {
   for (size_t j = 0; j < TILES_Y; j++) {
     if (tile_delete_info_.rows[j]) {
       res = true;
-      size_t dj = 1, max_j = TILES_Y;
+      int dj = 1;
+      size_t max_j = TILES_Y;
       if (j < TILES_Y / 2) {
         trace("Move down\n");
         dj = -1;
