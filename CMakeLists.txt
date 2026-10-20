@@ -11,7 +11,7 @@ if (NOT MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-multichar")
 endif()
 
-add_subdirectory(lib/raylib)
+add_subdirectory(third_party/raylib)
 
 add_executable(${PROJECT_NAME}
     raylib_adapter/main.cpp
