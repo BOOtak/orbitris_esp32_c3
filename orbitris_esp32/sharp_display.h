@@ -7,7 +7,10 @@
 void lcd_init();
 
 /**
- * @brief Sends framebuffer data to the display
+ * @brief Queues the current framebuffer for asynchronous DMA transfer.
+ *
+ * Returns immediately; the previous transfer is reaped first if it is still
+ * running. Drawing continues into the other framebuffer while DMA sends this one.
  */
 void lcd_update();
 
