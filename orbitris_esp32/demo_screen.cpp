@@ -80,7 +80,48 @@ constexpr float BEAM_ANGLE = PI / 2.0f;
 constexpr float BEAM_HALF_ANGLE = BEAM_ANGLE / 2.0f;
 constexpr int BEAM_RAYS = 256;
 constexpr float MAX_LIGHT_DISTANCE = 200.0f;
+constexpr float LIGHT_FULL_DISTANCE = 64.0f;
+constexpr float LIGHT_EDGE_FADE_WIDTH = 16.0f;
+constexpr float SHADOW_LENGTH_FACTOR = 0.35f;
+constexpr float SHADOW_MAX_OFFSET = 60.0f;
+constexpr float SHADOW_SCALE_PER_OFFSET = 0.012f;
+constexpr int SHADOW_CIRCLE_SEGMENTS = 24;
+constexpr int MAX_SHADOW_HULL_POINTS = 64;
+constexpr float MAX_LIGHT_DISTANCE_SQ = MAX_LIGHT_DISTANCE * MAX_LIGHT_DISTANCE;
+constexpr float LIGHT_FULL_DISTANCE_SQ = LIGHT_FULL_DISTANCE * LIGHT_FULL_DISTANCE;
 constexpr float RAY_INFINITY = 1.0e30f;
+
+constexpr int BAYER_4X4[4][4] = {
+  { 0, 8, 2, 10 },
+  { 12, 4, 14, 6 },
+  { 3, 11, 1, 9 },
+  { 15, 7, 13, 5 },
+};
+
+constexpr float dither_cutoff(int bayer) {
+  const float threshold = (static_cast<float>(bayer) + 0.5f) / 16.0f;
+  return LIGHT_FULL_DISTANCE_SQ +
+         (1.0f - threshold) * (MAX_LIGHT_DISTANCE_SQ - LIGHT_FULL_DISTANCE_SQ);
+}
+
+constexpr float DITHER_DISTANCE_SQ[16] = {
+  dither_cutoff(0),  dither_cutoff(1),  dither_cutoff(2),  dither_cutoff(3),
+  dither_cutoff(4),  dither_cutoff(5),  dither_cutoff(6),  dither_cutoff(7),
+  dither_cutoff(8),  dither_cutoff(9),  dither_cutoff(10), dither_cutoff(11),
+  dither_cutoff(12), dither_cutoff(13), dither_cutoff(14), dither_cutoff(15),
+};
+
+constexpr float edge_dither_cutoff(int bayer) {
+  const float threshold = (static_cast<float>(bayer) + 0.5f) / 16.0f;
+  return threshold * LIGHT_EDGE_FADE_WIDTH;
+}
+
+constexpr float EDGE_DITHER_DISTANCE[16] = {
+  edge_dither_cutoff(0),  edge_dither_cutoff(1),  edge_dither_cutoff(2),  edge_dither_cutoff(3),
+  edge_dither_cutoff(4),  edge_dither_cutoff(5),  edge_dither_cutoff(6),  edge_dither_cutoff(7),
+  edge_dither_cutoff(8),  edge_dither_cutoff(9),  edge_dither_cutoff(10), edge_dither_cutoff(11),
+  edge_dither_cutoff(12), edge_dither_cutoff(13), edge_dither_cutoff(14), edge_dither_cutoff(15),
+};
 
 bool is_wall_block(int col, int row) {
   if (col < 0 || col >= MAZE_BLOCK_COLS || row < 0 || row >= MAZE_BLOCK_ROWS) {
@@ -154,102 +195,6 @@ float raycast_walls(Vector2 origin, Vector2 dir, float max_dist) {
       return t;
     }
   }
-}
-
-float raycast_circle(Vector2 origin, Vector2 dir, const CircleObstacle& circle, float max_dist) {
-  float ox = origin.x - circle.center.x;
-  float oy = origin.y - circle.center.y;
-  float b = ox * dir.x + oy * dir.y;
-  float c = ox * ox + oy * oy - circle.radius * circle.radius;
-  if (c <= 0.0f) {
-    return 0.0f;
-  }
-
-  float disc = b * b - c;
-  if (disc < 0.0f) {
-    return max_dist;
-  }
-
-  float sqrt_disc = std::sqrt(disc);
-  float t = -b - sqrt_disc;
-  if (t < 0.0f) {
-    t = -b + sqrt_disc;
-  }
-  if (t < 0.0f || t > max_dist) {
-    return max_dist;
-  }
-  return t;
-}
-
-float raycast_rect(Vector2 origin, Vector2 dir, const RotatedRectObstacle& rect, float max_dist) {
-  float c = std::cos(rect.angle);
-  float s = std::sin(rect.angle);
-  float ox = origin.x - rect.center.x;
-  float oy = origin.y - rect.center.y;
-
-  float local_ox = ox * c + oy * s;
-  float local_oy = -ox * s + oy * c;
-  float local_dx = dir.x * c + dir.y * s;
-  float local_dy = -dir.x * s + dir.y * c;
-
-  float tmin = -RAY_INFINITY;
-  float tmax = RAY_INFINITY;
-
-  if (std::fabs(local_dx) < 1e-6f) {
-    if (local_ox < -rect.half_width || local_ox > rect.half_width) {
-      return max_dist;
-    }
-  } else {
-    float t1 = (-rect.half_width - local_ox) / local_dx;
-    float t2 = (rect.half_width - local_ox) / local_dx;
-    if (t1 > t2) {
-      std::swap(t1, t2);
-    }
-    tmin = std::max(tmin, t1);
-    tmax = std::min(tmax, t2);
-    if (tmin > tmax) {
-      return max_dist;
-    }
-  }
-
-  if (std::fabs(local_dy) < 1e-6f) {
-    if (local_oy < -rect.half_height || local_oy > rect.half_height) {
-      return max_dist;
-    }
-  } else {
-    float t1 = (-rect.half_height - local_oy) / local_dy;
-    float t2 = (rect.half_height - local_oy) / local_dy;
-    if (t1 > t2) {
-      std::swap(t1, t2);
-    }
-    tmin = std::max(tmin, t1);
-    tmax = std::min(tmax, t2);
-    if (tmin > tmax) {
-      return max_dist;
-    }
-  }
-
-  if (tmax < 0.0f) {
-    return max_dist;
-  }
-  if (tmin < 0.0f) {
-    return 0.0f;
-  }
-  if (tmin > max_dist) {
-    return max_dist;
-  }
-  return tmin;
-}
-
-float raycast_scene(Vector2 origin, Vector2 dir, float max_dist) {
-  float best = raycast_walls(origin, dir, max_dist);
-  for (const auto& circle : CIRCLE_OBSTACLES) {
-    best = std::min(best, raycast_circle(origin, dir, circle, max_dist));
-  }
-  for (const auto& rect : RECT_OBSTACLES) {
-    best = std::min(best, raycast_rect(origin, dir, rect, max_dist));
-  }
-  return best;
 }
 
 bool collides_with_walls(Vector2 pos, float radius) {
@@ -334,10 +279,13 @@ void draw_filled_circle(int cx, int cy, int radius, int color) {
   }
 }
 
-void fill_polygon(const Vector2* vertices, int count, int color) {
+void fill_light_polygon(const Vector2* vertices, int count, Vector2 origin, float beam_angle) {
   if (count < 3) {
     return;
   }
+
+  const Vector2 left_edge = direction_from_angle(beam_angle - BEAM_HALF_ANGLE);
+  const Vector2 right_edge = direction_from_angle(beam_angle + BEAM_HALF_ANGLE);
 
   float min_y = vertices[0].y;
   float max_y = vertices[0].y;
@@ -348,7 +296,7 @@ void fill_polygon(const Vector2* vertices, int count, int color) {
 
   int y_start = std::max(static_cast<int>(std::ceil(min_y)), 0);
   int y_end = std::min(static_cast<int>(std::floor(max_y)), LCD_HEIGHT - 1);
-  float xs[BEAM_RAYS + 2];
+  static float xs[BEAM_RAYS + 2];
 
   for (int y = y_start; y <= y_end; ++y) {
     float fy = static_cast<float>(y) + 0.5f;
@@ -368,11 +316,35 @@ void fill_polygon(const Vector2* vertices, int count, int color) {
     }
 
     std::sort(xs, xs + count_x);
+
     for (int i = 0; i + 1 < count_x; i += 2) {
       int x0 = std::max(static_cast<int>(std::ceil(xs[i] - 0.5f)), 0);
       int x1 = std::min(static_cast<int>(std::floor(xs[i + 1] - 0.5f)), LCD_WIDTH - 1);
-      if (x0 <= x1) {
-        draw_hline(x0, y, x1 - x0 + 1, color);
+      if (x0 > x1) {
+        continue;
+      }
+
+      const float dy = static_cast<float>(y) - origin.y;
+      const float dy_sq = dy * dy;
+      for (int x = x0; x <= x1; ++x) {
+        const float dx = static_cast<float>(x) - origin.x;
+        const float dist_sq = dx * dx + dy_sq;
+        if (dist_sq >= MAX_LIGHT_DISTANCE_SQ) {
+          continue;
+        }
+
+        const int bayer = BAYER_4X4[y & 3][x & 3];
+        if (dist_sq >= DITHER_DISTANCE_SQ[bayer]) {
+          continue;
+        }
+
+        const float left_dist = std::fabs(left_edge.x * dy - left_edge.y * dx);
+        const float right_dist = std::fabs(right_edge.x * dy - right_edge.y * dx);
+        if (std::min(left_dist, right_dist) <= EDGE_DITHER_DISTANCE[bayer]) {
+          continue;
+        }
+
+        draw_pixel(x, y, LCD_WHITE);
       }
     }
   }
@@ -443,22 +415,181 @@ void draw_obstacles(int camera_x, int camera_y) {
   }
 }
 
+float cross2(Vector2 o, Vector2 a, Vector2 b) {
+  return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+}
+
+int convex_hull(Vector2* points, int count, Vector2* hull) {
+  if (count < 3) {
+    return count;
+  }
+
+  std::sort(points, points + count, [](const Vector2& a, const Vector2& b) {
+    return a.x < b.x || (a.x == b.x && a.y < b.y);
+  });
+
+  int k = 0;
+  for (int i = 0; i < count; ++i) {
+    while (k >= 2 && cross2(hull[k - 2], hull[k - 1], points[i]) <= 0.0f) {
+      --k;
+    }
+    hull[k++] = points[i];
+  }
+
+  for (int i = count - 2, t = k + 1; i >= 0; --i) {
+    while (k >= t && cross2(hull[k - 2], hull[k - 1], points[i]) <= 0.0f) {
+      --k;
+    }
+    hull[k++] = points[i];
+  }
+
+  if (k > 1) {
+    --k;
+  }
+  return k;
+}
+
+void fill_solid_polygon(const Vector2* vertices, int count, int color) {
+  if (count < 3) {
+    return;
+  }
+
+  float min_y = vertices[0].y;
+  float max_y = vertices[0].y;
+  for (int i = 1; i < count; ++i) {
+    min_y = std::min(min_y, vertices[i].y);
+    max_y = std::max(max_y, vertices[i].y);
+  }
+
+  int y_start = std::max(static_cast<int>(std::ceil(min_y)), 0);
+  int y_end = std::min(static_cast<int>(std::floor(max_y)), LCD_HEIGHT - 1);
+  static float xs[MAX_SHADOW_HULL_POINTS];
+
+  for (int y = y_start; y <= y_end; ++y) {
+    float fy = static_cast<float>(y) + 0.5f;
+    int count_x = 0;
+
+    for (int i = 0; i < count; ++i) {
+      const Vector2& a = vertices[i];
+      const Vector2& b = vertices[(i + 1) % count];
+      if ((fy >= a.y && fy < b.y) || (fy >= b.y && fy < a.y)) {
+        float t = (fy - a.y) / (b.y - a.y);
+        xs[count_x++] = a.x + (b.x - a.x) * t;
+      }
+    }
+
+    if (count_x < 2) {
+      continue;
+    }
+
+    std::sort(xs, xs + count_x);
+    for (int i = 0; i + 1 < count_x; i += 2) {
+      int x0 = std::max(static_cast<int>(std::ceil(xs[i] - 0.5f)), 0);
+      int x1 = std::min(static_cast<int>(std::floor(xs[i + 1] - 0.5f)), LCD_WIDTH - 1);
+      if (x0 <= x1) {
+        draw_hline(x0, y, x1 - x0 + 1, color);
+      }
+    }
+  }
+}
+
+void draw_obstacle_shadows(Vector2 player_world, int camera_x, int camera_y) {
+  static Vector2 points[MAX_SHADOW_HULL_POINTS];
+  static Vector2 hull[MAX_SHADOW_HULL_POINTS];
+
+  for (const auto& circle : CIRCLE_OBSTACLES) {
+    const Vector2 to{ circle.center.x - player_world.x, circle.center.y - player_world.y };
+    const float dist = std::sqrt(to.x * to.x + to.y * to.y);
+    if (dist <= 0.0f) {
+      continue;
+    }
+
+    const Vector2 away{ to.x / dist, to.y / dist };
+    const float offset = std::min(dist * SHADOW_LENGTH_FACTOR, SHADOW_MAX_OFFSET);
+    const float scale = 1.0f + offset * SHADOW_SCALE_PER_OFFSET;
+    const Vector2 shadow_center{ circle.center.x + away.x * offset,
+                                 circle.center.y + away.y * offset };
+
+    int count = 0;
+    for (int i = 0; i < SHADOW_CIRCLE_SEGMENTS; ++i) {
+      const float a =
+        2.0f * PI * static_cast<float>(i) / static_cast<float>(SHADOW_CIRCLE_SEGMENTS);
+      const float ca = std::cos(a);
+      const float sa = std::sin(a);
+      points[count++] = { circle.center.x + ca * circle.radius,
+                          circle.center.y + sa * circle.radius };
+      points[count++] = { shadow_center.x + ca * circle.radius * scale,
+                          shadow_center.y + sa * circle.radius * scale };
+    }
+
+    const int hull_count = convex_hull(points, count, hull);
+    if (hull_count >= 3) {
+      for (int i = 0; i < hull_count; ++i) {
+        hull[i].x -= camera_x;
+        hull[i].y -= camera_y;
+      }
+      fill_solid_polygon(hull, hull_count, LCD_BLACK);
+    }
+  }
+
+  for (const auto& rect : RECT_OBSTACLES) {
+    const Vector2 to{ rect.center.x - player_world.x, rect.center.y - player_world.y };
+    const float dist = std::sqrt(to.x * to.x + to.y * to.y);
+    if (dist <= 0.0f) {
+      continue;
+    }
+
+    const Vector2 away{ to.x / dist, to.y / dist };
+    const float offset = std::min(dist * SHADOW_LENGTH_FACTOR, SHADOW_MAX_OFFSET);
+    const float scale = 1.0f + offset * SHADOW_SCALE_PER_OFFSET;
+    const Vector2 shadow_center{ rect.center.x + away.x * offset,
+                                 rect.center.y + away.y * offset };
+
+    const float c = std::cos(rect.angle);
+    const float s = std::sin(rect.angle);
+    const float local_x[4] = { -rect.half_width, rect.half_width, rect.half_width,
+                               -rect.half_width };
+    const float local_y[4] = { -rect.half_height, -rect.half_height, rect.half_height,
+                               rect.half_height };
+
+    int count = 0;
+    for (int i = 0; i < 4; ++i) {
+      points[count++] = { rect.center.x + local_x[i] * c - local_y[i] * s,
+                          rect.center.y + local_x[i] * s + local_y[i] * c };
+      points[count++] = { shadow_center.x + (local_x[i] * scale) * c -
+                            (local_y[i] * scale) * s,
+                          shadow_center.y + (local_x[i] * scale) * s +
+                            (local_y[i] * scale) * c };
+    }
+
+    const int hull_count = convex_hull(points, count, hull);
+    if (hull_count >= 3) {
+      for (int i = 0; i < hull_count; ++i) {
+        hull[i].x -= camera_x;
+        hull[i].y -= camera_y;
+      }
+      fill_solid_polygon(hull, hull_count, LCD_BLACK);
+    }
+  }
+}
+
 void draw_light(Vector2 player_world, Vector2 player_screen, float angle, int camera_x,
                 int camera_y) {
   constexpr int POLYGON_VERTICES = BEAM_RAYS + 2;
-  Vector2 vertices[POLYGON_VERTICES];
+  static Vector2 vertices[POLYGON_VERTICES];
   vertices[0] = player_screen;
 
   for (int i = 0; i <= BEAM_RAYS; ++i) {
     const float offset =
       -BEAM_HALF_ANGLE + (BEAM_ANGLE * static_cast<float>(i)) / static_cast<float>(BEAM_RAYS);
     const Vector2 dir = direction_from_angle(angle + offset);
-    const float dist = raycast_scene(player_world, dir, MAX_LIGHT_DISTANCE);
+    const float dist = raycast_walls(player_world, dir, MAX_LIGHT_DISTANCE);
     const Vector2 hit_world{ player_world.x + dir.x * dist, player_world.y + dir.y * dist };
     vertices[i + 1] = { hit_world.x - camera_x, hit_world.y - camera_y };
   }
 
-  fill_polygon(vertices, POLYGON_VERTICES, LCD_WHITE);
+  fill_light_polygon(vertices, POLYGON_VERTICES, player_screen, angle);
+  draw_obstacle_shadows(player_world, camera_x, camera_y);
 }
 
 void draw_direction_hint(int cx, int cy, float angle) {
