@@ -23,6 +23,7 @@ add_executable(${PROJECT_NAME}
     orbitris_esp32/authors_screen.cpp
     orbitris_esp32/button.cpp
     orbitris_esp32/button_grid_manager.cpp
+    orbitris_esp32/demo_screen.cpp
     orbitris_esp32/draw.cpp
     orbitris_esp32/explosion.cpp
     orbitris_esp32/game_main.cpp
