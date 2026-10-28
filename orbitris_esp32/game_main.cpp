@@ -3,6 +3,7 @@
 #include <array>
 
 #include "authors_screen.h"
+#include "demo_screen.h"
 #include "game_screen.h"
 #include "game_over_screen.h"
 #include "game_utils.h"
@@ -83,6 +84,7 @@ void init_game() {
     stats = {};
   }
 
+  screens::demo_screen = new DemoScreen();
   screens::game_screen = new GameScreen(stats);
   screens::game_over_screen = new GameOverScreen(stats, highscores);
   screens::menu_screen = new MenuScreen(stats);
@@ -91,11 +93,13 @@ void init_game() {
   screens::highscore_screen = new HighscoreTableScreen(highscores);
   screens::authors_screen = new AuthorsScreen();
 
-  if (stats.in_game) {
-    current_screen = screens::game_screen;
-  } else {
-    current_screen = screens::menu_screen;
-  }
+  // if (stats.in_game) {
+  //   current_screen = screens::game_screen;
+  // } else {
+  //   current_screen = screens::menu_screen;
+  // }
+
+  current_screen = screens::demo_screen;
 
   current_screen->init();
   in_transition = false;
