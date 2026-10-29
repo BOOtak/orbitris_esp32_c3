@@ -170,13 +170,82 @@ float raycast_walls(Vector2 origin, Vector2 dir, float max_dist) {
   }
 }
 
-bool collides_with_walls(Vector2 pos, float radius) {
-  int min_col = static_cast<int>(std::floor((pos.x - radius) / BLOCK_SIZE));
-  int max_col = static_cast<int>(std::floor((pos.x + radius) / BLOCK_SIZE));
-  int min_row = static_cast<int>(std::floor((pos.y - radius) / BLOCK_SIZE));
-  int max_row = static_cast<int>(std::floor((pos.y + radius) / BLOCK_SIZE));
+// Describes how far, and in which direction, the player circle has to move to
+// stop overlapping a piece of level geometry.
+struct Contact {
+  bool hit{};
+  Vector2 normal{};
+  float depth{};
+};
 
-  const float radius_sq = radius * radius - COLLISION_EPSILON;
+Contact circle_contact(Vector2 pos, float radius, Vector2 center, float center_radius) {
+  Contact contact{};
+
+  const float dx = pos.x - center.x;
+  const float dy = pos.y - center.y;
+  const float min_dist = radius + center_radius;
+  const float dist_sq = dx * dx + dy * dy;
+  if (dist_sq >= min_dist * min_dist) {
+    return contact;
+  }
+
+  const float dist = std::sqrt(dist_sq);
+  contact.hit = true;
+  contact.depth = min_dist - dist;
+  contact.normal = dist > 0.0001f ? Vector2{ dx / dist, dy / dist } : Vector2{ 0.0f, -1.0f };
+  return contact;
+}
+
+// Circle contact against an axis-aligned box centered on the origin. `local` is
+// the circle center relative to the box center.
+Contact box_contact(Vector2 local, float radius, float half_width, float half_height) {
+  Contact contact{};
+
+  const float closest_x = std::clamp(local.x, -half_width, half_width);
+  const float closest_y = std::clamp(local.y, -half_height, half_height);
+  const float dx = local.x - closest_x;
+  const float dy = local.y - closest_y;
+  const float dist_sq = dx * dx + dy * dy;
+
+  if (dist_sq > 0.0f) {
+    if (dist_sq >= radius * radius) {
+      return contact;
+    }
+
+    const float dist = std::sqrt(dist_sq);
+    contact.hit = true;
+    contact.depth = radius - dist;
+    contact.normal = { dx / dist, dy / dist };
+    return contact;
+  }
+
+  // The center is inside the box; push out through the nearest face.
+  const float pen_x = half_width - std::fabs(local.x);
+  const float pen_y = half_height - std::fabs(local.y);
+  contact.hit = true;
+  if (pen_x < pen_y) {
+    contact.normal = { local.x < 0.0f ? -1.0f : 1.0f, 0.0f };
+    contact.depth = radius + pen_x;
+  } else {
+    contact.normal = { 0.0f, local.y < 0.0f ? -1.0f : 1.0f };
+    contact.depth = radius + pen_y;
+  }
+  return contact;
+}
+
+void keep_deeper(Contact& deepest, const Contact& contact) {
+  if (contact.hit && contact.depth > deepest.depth) {
+    deepest = contact;
+  }
+}
+
+Contact deepest_contact(Vector2 pos, float radius) {
+  Contact deepest{};
+
+  const int min_col = static_cast<int>(std::floor((pos.x - radius) / BLOCK_SIZE));
+  const int max_col = static_cast<int>(std::floor((pos.x + radius) / BLOCK_SIZE));
+  const int min_row = static_cast<int>(std::floor((pos.y - radius) / BLOCK_SIZE));
+  const int max_row = static_cast<int>(std::floor((pos.y + radius) / BLOCK_SIZE));
 
   for (int row = min_row; row <= max_row; ++row) {
     for (int col = min_col; col <= max_col; ++col) {
@@ -184,64 +253,66 @@ bool collides_with_walls(Vector2 pos, float radius) {
         continue;
       }
 
-      float closest_x = std::clamp(pos.x, static_cast<float>(col * BLOCK_SIZE),
-                                   static_cast<float>((col + 1) * BLOCK_SIZE));
-      float closest_y = std::clamp(pos.y, static_cast<float>(row * BLOCK_SIZE),
-                                   static_cast<float>((row + 1) * BLOCK_SIZE));
-      float dx = pos.x - closest_x;
-      float dy = pos.y - closest_y;
-      if (dx * dx + dy * dy < radius_sq) {
-        return true;
-      }
+      const Vector2 local{ pos.x - (col + 0.5f) * BLOCK_SIZE, pos.y - (row + 0.5f) * BLOCK_SIZE };
+      keep_deeper(deepest,
+                  box_contact(local, radius, BLOCK_SIZE / 2.0f, BLOCK_SIZE / 2.0f));
     }
   }
 
-  return false;
-}
-
-bool collides_with_obstacles(Vector2 pos, float radius) {
   for (const auto& circle : CIRCLE_OBSTACLES) {
-    float dx = pos.x - circle.center.x;
-    float dy = pos.y - circle.center.y;
-    float min_dist = radius + circle.radius;
-    if (dx * dx + dy * dy < min_dist * min_dist - COLLISION_EPSILON) {
-      return true;
-    }
+    keep_deeper(deepest, circle_contact(pos, radius, circle.center, circle.radius));
   }
 
   for (const auto& rect : RECT_OBSTACLES) {
-    float c = std::cos(rect.angle);
-    float s = std::sin(rect.angle);
-    float dx = pos.x - rect.center.x;
-    float dy = pos.y - rect.center.y;
+    const float c = std::cos(rect.angle);
+    const float s = std::sin(rect.angle);
+    const float dx = pos.x - rect.center.x;
+    const float dy = pos.y - rect.center.y;
+    const Vector2 local{ dx * c + dy * s, -dx * s + dy * c };
 
-    float local_x = dx * c + dy * s;
-    float local_y = -dx * s + dy * c;
-    float closest_x = std::clamp(local_x, -rect.half_width, rect.half_width);
-    float closest_y = std::clamp(local_y, -rect.half_height, rect.half_height);
-    float ddx = local_x - closest_x;
-    float ddy = local_y - closest_y;
-    if (ddx * ddx + ddy * ddy < radius * radius - COLLISION_EPSILON) {
-      return true;
+    Contact contact = box_contact(local, radius, rect.half_width, rect.half_height);
+    if (contact.hit) {
+      contact.normal = { contact.normal.x * c - contact.normal.y * s,
+                         contact.normal.x * s + contact.normal.y * c };
     }
+    keep_deeper(deepest, contact);
   }
 
-  return false;
+  return deepest;
 }
 
-bool collides(Vector2 pos, float radius) {
-  return collides_with_walls(pos, radius) || collides_with_obstacles(pos, radius);
+// Pushes the player out of the deepest overlap. Because the push always follows
+// the contact normal, only the blocked part of the movement is cancelled: the
+// player keeps sliding along walls and around obstacle corners instead of
+// stopping dead.
+bool resolve_penetration(Vector2& pos, float radius) {
+  const Contact contact = deepest_contact(pos, radius);
+  if (!contact.hit) {
+    return false;
+  }
+
+  pos.x += contact.normal.x * (contact.depth + COLLISION_EPSILON);
+  pos.y += contact.normal.y * (contact.depth + COLLISION_EPSILON);
+  return true;
 }
 
 void move_with_collision(Vector2& pos, Vector2 delta, float radius) {
-  Vector2 next{ pos.x + delta.x, pos.y };
-  if (!collides(next, radius)) {
-    pos = next;
+  for (int i = 0; i < MAX_RESOLVE_ITERATIONS && resolve_penetration(pos, radius); ++i) {
   }
 
-  next = { pos.x, pos.y + delta.y };
-  if (!collides(next, radius)) {
-    pos = next;
+  const float distance = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+  if (distance <= 0.0f) {
+    return;
+  }
+
+  // Small enough substeps to rule out tunneling through 16px blocks.
+  const int steps = std::max(1, static_cast<int>(std::ceil(distance / MAX_MOVE_STEP)));
+  const Vector2 step{ delta.x / static_cast<float>(steps), delta.y / static_cast<float>(steps) };
+
+  for (int s = 0; s < steps; ++s) {
+    pos += step;
+    for (int i = 0; i < MAX_RESOLVE_ITERATIONS && resolve_penetration(pos, radius); ++i) {
+    }
   }
 }
 
