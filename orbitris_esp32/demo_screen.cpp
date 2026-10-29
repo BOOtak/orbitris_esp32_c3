@@ -46,12 +46,9 @@ constexpr float PI = 3.14159265358979323846f;
 constexpr float PLAYER_RADIUS = 16.0f;
 constexpr float PLAYER_COLLISION_RADIUS = PLAYER_RADIUS;
 constexpr Vector2 PLAYER_START{ 120.0f, 120.0f };
-constexpr float PLAYER_START_ANGLE = 0.0f;
 
 constexpr float MOVE_SPEED = 1.5f;
 constexpr float RUN_MULTIPLIER = 1.8f;
-constexpr float ROTATE_SPEED = 0.045f;
-constexpr float FAST_ROTATE_MULTIPLIER = 2.5f;
 
 constexpr float COLLISION_EPSILON = 0.01f;
 
@@ -76,12 +73,10 @@ constexpr RotatedRectObstacle RECT_OBSTACLES[] = {
   { { 280.0f, 216.0f }, 22.0f, 10.0f, PI / 6.0f },
 };
 
-constexpr float BEAM_ANGLE = PI / 2.0f;
-constexpr float BEAM_HALF_ANGLE = BEAM_ANGLE / 2.0f;
-constexpr int BEAM_RAYS = 256;
+constexpr float TWO_PI = 2.0f * PI;
+constexpr int LIGHT_RAYS = 512;
 constexpr float MAX_LIGHT_DISTANCE = 200.0f;
 constexpr float LIGHT_FULL_DISTANCE = 64.0f;
-constexpr float LIGHT_EDGE_FADE_WIDTH = 16.0f;
 constexpr float SHADOW_LENGTH_FACTOR = 0.35f;
 constexpr float SHADOW_MAX_OFFSET = 60.0f;
 constexpr float SHADOW_SCALE_PER_OFFSET = 0.012f;
@@ -111,33 +106,11 @@ constexpr float DITHER_DISTANCE_SQ[16] = {
   dither_cutoff(12), dither_cutoff(13), dither_cutoff(14), dither_cutoff(15),
 };
 
-constexpr float edge_dither_cutoff(int bayer) {
-  const float threshold = (static_cast<float>(bayer) + 0.5f) / 16.0f;
-  return threshold * LIGHT_EDGE_FADE_WIDTH;
-}
-
-constexpr float EDGE_DITHER_DISTANCE[16] = {
-  edge_dither_cutoff(0),  edge_dither_cutoff(1),  edge_dither_cutoff(2),  edge_dither_cutoff(3),
-  edge_dither_cutoff(4),  edge_dither_cutoff(5),  edge_dither_cutoff(6),  edge_dither_cutoff(7),
-  edge_dither_cutoff(8),  edge_dither_cutoff(9),  edge_dither_cutoff(10), edge_dither_cutoff(11),
-  edge_dither_cutoff(12), edge_dither_cutoff(13), edge_dither_cutoff(14), edge_dither_cutoff(15),
-};
-
 bool is_wall_block(int col, int row) {
   if (col < 0 || col >= MAZE_BLOCK_COLS || row < 0 || row >= MAZE_BLOCK_ROWS) {
     return true;
   }
   return MAZE[row / CELL_BLOCKS][col / CELL_BLOCKS] == '#';
-}
-
-float normalize_angle(float angle) {
-  constexpr float TWO_PI = 2.0f * PI;
-  if (angle > PI) {
-    angle -= TWO_PI;
-  } else if (angle < -PI) {
-    angle += TWO_PI;
-  }
-  return angle;
 }
 
 Vector2 direction_from_angle(float angle) {
@@ -279,13 +252,10 @@ void draw_filled_circle(int cx, int cy, int radius, int color) {
   }
 }
 
-void fill_light_polygon(const Vector2* vertices, int count, Vector2 origin, float beam_angle) {
+void fill_light_polygon(const Vector2* vertices, int count, Vector2 origin) {
   if (count < 3) {
     return;
   }
-
-  const Vector2 left_edge = direction_from_angle(beam_angle - BEAM_HALF_ANGLE);
-  const Vector2 right_edge = direction_from_angle(beam_angle + BEAM_HALF_ANGLE);
 
   float min_y = vertices[0].y;
   float max_y = vertices[0].y;
@@ -296,7 +266,7 @@ void fill_light_polygon(const Vector2* vertices, int count, Vector2 origin, floa
 
   int y_start = std::max(static_cast<int>(std::ceil(min_y)), 0);
   int y_end = std::min(static_cast<int>(std::floor(max_y)), LCD_HEIGHT - 1);
-  static float xs[BEAM_RAYS + 2];
+  static float xs[LIGHT_RAYS + 2];
 
   for (int y = y_start; y <= y_end; ++y) {
     float fy = static_cast<float>(y) + 0.5f;
@@ -335,12 +305,6 @@ void fill_light_polygon(const Vector2* vertices, int count, Vector2 origin, floa
 
         const int bayer = BAYER_4X4[y & 3][x & 3];
         if (dist_sq >= DITHER_DISTANCE_SQ[bayer]) {
-          continue;
-        }
-
-        const float left_dist = std::fabs(left_edge.x * dy - left_edge.y * dx);
-        const float right_dist = std::fabs(right_edge.x * dy - right_edge.y * dx);
-        if (std::min(left_dist, right_dist) <= EDGE_DITHER_DISTANCE[bayer]) {
           continue;
         }
 
@@ -573,49 +537,29 @@ void draw_obstacle_shadows(Vector2 player_world, int camera_x, int camera_y) {
   }
 }
 
-void draw_light(Vector2 player_world, Vector2 player_screen, float angle, int camera_x,
-                int camera_y) {
-  constexpr int POLYGON_VERTICES = BEAM_RAYS + 2;
+void draw_light(Vector2 player_world, Vector2 player_screen, int camera_x, int camera_y) {
+  constexpr int POLYGON_VERTICES = LIGHT_RAYS;
   static Vector2 vertices[POLYGON_VERTICES];
-  vertices[0] = player_screen;
 
-  for (int i = 0; i <= BEAM_RAYS; ++i) {
-    const float offset =
-      -BEAM_HALF_ANGLE + (BEAM_ANGLE * static_cast<float>(i)) / static_cast<float>(BEAM_RAYS);
-    const Vector2 dir = direction_from_angle(angle + offset);
+  for (int i = 0; i < LIGHT_RAYS; ++i) {
+    const float angle = TWO_PI * static_cast<float>(i) / static_cast<float>(LIGHT_RAYS);
+    const Vector2 dir = direction_from_angle(angle);
     const float dist = raycast_walls(player_world, dir, MAX_LIGHT_DISTANCE);
     const Vector2 hit_world{ player_world.x + dir.x * dist, player_world.y + dir.y * dist };
-    vertices[i + 1] = { hit_world.x - camera_x, hit_world.y - camera_y };
+    vertices[i] = { hit_world.x - camera_x, hit_world.y - camera_y };
   }
 
-  fill_light_polygon(vertices, POLYGON_VERTICES, player_screen, angle);
+  fill_light_polygon(vertices, POLYGON_VERTICES, player_screen);
   draw_obstacle_shadows(player_world, camera_x, camera_y);
-}
-
-void draw_direction_hint(int cx, int cy, float angle) {
-  Vector2 dir = direction_from_angle(angle);
-  Vector2 perp{ -dir.y, dir.x };
-
-  int tip_x = cx + static_cast<int>(dir.x * (PLAYER_RADIUS - 2.0f));
-  int tip_y = cy + static_cast<int>(dir.y * (PLAYER_RADIUS - 2.0f));
-  int base_x = cx + static_cast<int>(dir.x * (PLAYER_RADIUS - 9.0f));
-  int base_y = cy + static_cast<int>(dir.y * (PLAYER_RADIUS - 9.0f));
-  int side_x = static_cast<int>(perp.x * 4.0f);
-  int side_y = static_cast<int>(perp.y * 4.0f);
-
-  draw_line(cx, cy, tip_x, tip_y, LCD_WHITE);
-  draw_line(tip_x, tip_y, base_x + side_x, base_y + side_y, LCD_WHITE);
-  draw_line(tip_x, tip_y, base_x - side_x, base_y - side_y, LCD_WHITE);
 }
 
 }  // namespace
 
 DemoScreen::DemoScreen()
-  : Screen(), player_pos_{ PLAYER_START }, player_angle_{ PLAYER_START_ANGLE } {}
+  : Screen(), player_pos_{ PLAYER_START } {}
 
 void DemoScreen::init() {
   player_pos_ = PLAYER_START;
-  player_angle_ = PLAYER_START_ANGLE;
   update_camera();
 }
 
@@ -627,30 +571,25 @@ void DemoScreen::update_camera() {
 }
 
 Screen* DemoScreen::update() {
-  const bool fast = is_key_down(ESP_KEY_A);
-  const float rotate_speed = fast ? ROTATE_SPEED * FAST_ROTATE_MULTIPLIER : ROTATE_SPEED;
-
+  Vector2 dir{};
   if (is_key_down(ESP_KEY_LEFT)) {
-    player_angle_ -= rotate_speed;
+    dir.x -= 1.0f;
   }
   if (is_key_down(ESP_KEY_RIGHT)) {
-    player_angle_ += rotate_speed;
+    dir.x += 1.0f;
   }
-  player_angle_ = normalize_angle(player_angle_);
-
-  int move = 0;
   if (is_key_down(ESP_KEY_UP)) {
-    ++move;
+    dir.y -= 1.0f;
   }
   if (is_key_down(ESP_KEY_DOWN)) {
-    --move;
+    dir.y += 1.0f;
   }
 
-  if (move != 0) {
-    const float speed = fast ? MOVE_SPEED * RUN_MULTIPLIER : MOVE_SPEED;
-    const float distance = speed * static_cast<float>(move);
-    const Vector2 dir = direction_from_angle(player_angle_);
-    move_with_collision(player_pos_, { dir.x * distance, dir.y * distance },
+  if (dir.x != 0.0f || dir.y != 0.0f) {
+    const float speed = is_key_down(ESP_KEY_A) ? MOVE_SPEED * RUN_MULTIPLIER : MOVE_SPEED;
+    const float length = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+    const float step = speed / length;
+    move_with_collision(player_pos_, { dir.x * step, dir.y * step },
                         PLAYER_COLLISION_RADIUS);
   }
 
@@ -666,14 +605,13 @@ void DemoScreen::draw() const {
   const int camera_y = static_cast<int>(std::lround(camera_pos_.y));
   const Vector2 player_screen{ player_pos_.x - camera_x, player_pos_.y - camera_y };
 
-  draw_light(player_pos_, player_screen, player_angle_, camera_x, camera_y);
+  draw_light(player_pos_, player_screen, camera_x, camera_y);
   draw_maze(camera_x, camera_y);
   draw_obstacles(camera_x, camera_y);
 
   const int cx = static_cast<int>(std::lround(player_screen.x));
   const int cy = static_cast<int>(std::lround(player_screen.y));
   draw_filled_circle(cx, cy, static_cast<int>(PLAYER_RADIUS), LCD_BLACK);
-  draw_direction_hint(cx, cy, player_angle_);
 }
 
 void DemoScreen::close() {

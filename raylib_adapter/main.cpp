@@ -24,6 +24,7 @@ void UpdateDrawFrame()
                    {(GetScreenWidth() - ((float)LCD_WIDTH * scale)) * 0.5f, (GetScreenHeight() - ((float)LCD_HEIGHT * scale)) * 0.5f,
                     (float)LCD_WIDTH * scale, (float)LCD_HEIGHT * scale},
                    {0.0f, 0.0f}, 0.0f, WHITE);
+    DrawFPS(0, 0);
     EndDrawing();
 }
 
