@@ -1,6 +1,6 @@
 #include "raylib.h"
 
-#include "../orbitris_esp32/const.h"
+#include "const.h"
 #include <cstdint>
 
 extern RenderTexture2D target;

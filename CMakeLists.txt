@@ -13,6 +13,16 @@ endif()
 
 add_subdirectory(third_party/raylib)
 
+add_library(common STATIC
+    lib/common/src/draw.cpp
+    lib/common/src/game_utils.cpp
+    lib/common/src/table_math.cpp
+)
+
+target_include_directories(common PUBLIC
+    lib/common/include
+)
+
 add_executable(${PROJECT_NAME}
     raylib_adapter/main.cpp
     raylib_adapter/input_raylib.cpp
@@ -23,22 +33,19 @@ add_executable(${PROJECT_NAME}
     orbitris_esp32/authors_screen.cpp
     orbitris_esp32/button.cpp
     orbitris_esp32/button_grid_manager.cpp
-    orbitris_esp32/draw.cpp
     orbitris_esp32/explosion.cpp
     orbitris_esp32/game_main.cpp
     orbitris_esp32/game_over_screen.cpp
     orbitris_esp32/game_screen.cpp
-    orbitris_esp32/game_utils.cpp
     orbitris_esp32/highscore_input_screen.cpp
     orbitris_esp32/highscore_screen.cpp
     orbitris_esp32/orbital.cpp
     orbitris_esp32/menu_screen.cpp
     orbitris_esp32/pause_screen.cpp
     orbitris_esp32/screen.cpp
-    orbitris_esp32/table_math.cpp
     orbitris_esp32/tetramino.cpp
     orbitris_esp32/tilemap.cpp
     orbitris_esp32/transition.cpp
     )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
+target_link_libraries(${PROJECT_NAME} PRIVATE raylib common)

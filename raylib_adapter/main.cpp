@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "../orbitris_esp32/const.h"
+#include "const.h"
 #include "../orbitris_esp32/game_main.h"
 
 constexpr auto WINDOW_SCALE = 3;

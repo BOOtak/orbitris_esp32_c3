@@ -1,0 +1,36 @@
+#pragma once
+
+#include <cstdint>
+
+void lcd_init();
+
+/**
+ * @brief Queues the current framebuffer for asynchronous DMA transfer.
+ *
+ * Returns immediately; the previous transfer is reaped first if it is still
+ * running. Drawing continues into the other framebuffer while DMA sends this one.
+ */
+void lcd_update();
+
+/**
+ * @brief Sends an All Clear command to the display.
+ */
+void lcd_clear();
+
+/**
+ * @brief Updates a single pixel in the local framebuffer.
+ * @param x X coordinate (0 to LCD_WIDTH-1).
+ * @param y Y coordinate (0 to LCD_HEIGHT-1).
+ * @param color Color (1 for black/set, 0 for white/clear).
+ */
+void lcd_draw_pixel(int x, int y, int color);
+
+void lcd_set_byte(int cx, int y, uint8_t value);
+
+/**
+ * @brief Fills the local framebuffer with a single color (0 for white, 1 for black).
+ * @param color The color to fill (0 or 1).
+ */
+void lcd_fill_buffer(int color);
+
+void lcd_fill_line(int line, uint8_t pattern, int color);

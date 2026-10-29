@@ -1,0 +1,9 @@
+{
+  "name": "common",
+  "version": "0.1.0",
+  "description": "Platform-independent drawing, math and UI primitives",
+  "build": {
+    "srcDir": "src",
+    "includeDir": "include"
+  }
+}

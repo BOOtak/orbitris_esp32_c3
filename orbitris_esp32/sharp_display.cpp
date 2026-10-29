@@ -1,4 +1,6 @@
-#include "sharp_display.h"
+// Sharp Memory LCD LS027B7DH01 (400x240) Driver for ESP32 Arduino
+
+#include "lcd.h"
 
 #include <Arduino.h>
 #include <driver/spi_master.h>

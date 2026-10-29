@@ -5,7 +5,7 @@
 #include <cstring>
 
 #include "const.h"
-#include "sharp_display.h"
+#include "lcd.h"
 
 constexpr int FONT_MAP_SIZE = FONT_END_CHAR - FONT_START_CHAR + 1;
 

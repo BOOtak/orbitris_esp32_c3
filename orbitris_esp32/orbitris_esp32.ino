@@ -3,7 +3,7 @@
 #include "const.h"
 #include "game_main.h"
 #include "input.h"
-#include "sharp_display.h"
+#include "lcd.h"
 
 // FPS counter
 static float framesPerSecond = 0.0f;
