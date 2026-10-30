@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -7,6 +8,9 @@
 constexpr auto TRACE_BUFFER_SIZE = 1024;
 
 void do_print(const char *buffer);
+
+// Monotonic clock in microseconds, implemented by each platform adapter.
+uint32_t platform_micros();
 
 static inline void trace(const char *fmt, ...)
 {

@@ -30,7 +30,7 @@ There are no automated tests, lint task, CI, or CMake presets. Building and runn
 
 ## Platform boundary
 
-The shared core must only call platform symbols implemented by both adapters: `lcd_draw_pixel`, `lcd_set_byte`, `lcd_fill_buffer`, `lcd_fill_line`, `is_key_down/pressed/released`, `input_init/input_update` (desktop no-ops), `load_*`/`persist_*`, `do_print`. Each adapter calls the shared `init_game()` and `update_draw_frame()`.
+The shared core must only call platform symbols implemented by both adapters: `lcd_draw_pixel`, `lcd_set_byte`, `lcd_fill_buffer`, `lcd_fill_line`, `is_key_down/pressed/released`, `input_init/input_update` (desktop no-ops), `load_*`/`persist_*`, `do_print`, `platform_micros`. Each adapter calls the shared `init_game()` and `update_draw_frame()`.
 
 - `lcd_init`, `lcd_clear`, and `lcd_update` exist only on the device; desktop `main.cpp` calls `update_draw_frame` directly.
 - Root `CMakeLists.txt` explicitly lists desktop sources and excludes the ESP-only files. When adding a shared `.cpp`, add it there. Never add `orbitris_esp32/{input,persist,sharp_display,trace}.cpp` or the `.ino`.

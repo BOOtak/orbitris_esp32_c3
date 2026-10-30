@@ -2,11 +2,19 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <utility>
 
 #include "const.h"
 #include "draw.h"
 #include "input.h"
+#include "lcd.h"
+#include "trace.h"
+
+// Set to 1 to print per-section frame timings (Serial on the device, stdout on
+// the desktop). Has no cost when disabled.
+#define DEMO_PROFILE 1
 
 namespace {
 
@@ -50,7 +58,13 @@ constexpr Vector2 PLAYER_START{ 120.0f, 120.0f };
 constexpr float MOVE_SPEED = 1.5f;
 constexpr float RUN_MULTIPLIER = 1.8f;
 
+// Extra gap added when pushing the player out of geometry, so the next frame
+// does not immediately report an overlap again.
 constexpr float COLLISION_EPSILON = 0.01f;
+// Longest distance covered per collision substep; shorter than a wall block.
+constexpr float MAX_MOVE_STEP = 1.0f;
+// Overlaps are resolved one at a time; a couple of passes settle corners.
+constexpr int MAX_RESOLVE_ITERATIONS = 4;
 
 struct CircleObstacle {
   Vector2 center;
@@ -84,7 +98,6 @@ constexpr int SHADOW_CIRCLE_SEGMENTS = 24;
 constexpr int MAX_SHADOW_HULL_POINTS = 64;
 constexpr float MAX_LIGHT_DISTANCE_SQ = MAX_LIGHT_DISTANCE * MAX_LIGHT_DISTANCE;
 constexpr float LIGHT_FULL_DISTANCE_SQ = LIGHT_FULL_DISTANCE * LIGHT_FULL_DISTANCE;
-constexpr float RAY_INFINITY = 1.0e30f;
 
 constexpr int BAYER_4X4[4][4] = {
   { 0, 8, 2, 10 },
@@ -93,18 +106,78 @@ constexpr int BAYER_4X4[4][4] = {
   { 15, 7, 13, 5 },
 };
 
-constexpr float dither_cutoff(int bayer) {
+// The C3 has no FPU and the dithered light touches most of the screen every
+// frame, so the light math runs in 6.6 fixed point (1/64 px) instead of floats.
+constexpr int SUBPIXEL_BITS = 6;
+constexpr int SUBPIXEL = 1 << SUBPIXEL_BITS;
+constexpr int MAX_SPAN_CROSSINGS = 128;
+
+// Ray casting: positions in 4.4 fixed point (1/16 px), directions in 4.12
+// (4096 = 1.0), so the parametric distance fits int32 without 64-bit math.
+constexpr int RAY_SUBPIXEL_BITS = 4;
+constexpr int RAY_SUBPIXEL = 1 << RAY_SUBPIXEL_BITS;
+constexpr int DIR_ONE = 1 << 12;
+constexpr int RAY_T_INFINITY = 1 << 24;
+constexpr int MAX_LIGHT_DISTANCE_FIXED = static_cast<int>(MAX_LIGHT_DISTANCE) * RAY_SUBPIXEL;
+
+constexpr int dither_cutoff_fixed(int bayer) {
   const float threshold = (static_cast<float>(bayer) + 0.5f) / 16.0f;
-  return LIGHT_FULL_DISTANCE_SQ +
-         (1.0f - threshold) * (MAX_LIGHT_DISTANCE_SQ - LIGHT_FULL_DISTANCE_SQ);
+  const float cutoff =
+    LIGHT_FULL_DISTANCE_SQ +
+    (1.0f - threshold) * (MAX_LIGHT_DISTANCE_SQ - LIGHT_FULL_DISTANCE_SQ);
+  return static_cast<int>(cutoff * static_cast<float>(SUBPIXEL * SUBPIXEL));
 }
 
-constexpr float DITHER_DISTANCE_SQ[16] = {
-  dither_cutoff(0),  dither_cutoff(1),  dither_cutoff(2),  dither_cutoff(3),
-  dither_cutoff(4),  dither_cutoff(5),  dither_cutoff(6),  dither_cutoff(7),
-  dither_cutoff(8),  dither_cutoff(9),  dither_cutoff(10), dither_cutoff(11),
-  dither_cutoff(12), dither_cutoff(13), dither_cutoff(14), dither_cutoff(15),
+// Squared light cutoff per Bayer cell, scaled by SUBPIXEL^2 to match the
+// fixed-point distance.
+constexpr int DITHER_CUTOFF_FIXED[16] = {
+  dither_cutoff_fixed(0),  dither_cutoff_fixed(1),  dither_cutoff_fixed(2),
+  dither_cutoff_fixed(3),  dither_cutoff_fixed(4),  dither_cutoff_fixed(5),
+  dither_cutoff_fixed(6),  dither_cutoff_fixed(7),  dither_cutoff_fixed(8),
+  dither_cutoff_fixed(9),  dither_cutoff_fixed(10), dither_cutoff_fixed(11),
+  dither_cutoff_fixed(12), dither_cutoff_fixed(13), dither_cutoff_fixed(14),
+  dither_cutoff_fixed(15),
 };
+
+struct ScreenPoint {
+  int x;
+  int y;
+};
+
+int floor_div(int value, int divisor) {
+  return value >= 0 ? value / divisor : -((-value + divisor - 1) / divisor);
+}
+
+int ceil_div(int value, int divisor) {
+  return -floor_div(-value, divisor);
+}
+
+int to_subpixel(float value) {
+  return static_cast<int>(value * SUBPIXEL + (value < 0.0f ? -0.5f : 0.5f));
+}
+
+int to_ray_subpixel(float value) {
+  return static_cast<int>(value * RAY_SUBPIXEL + (value < 0.0f ? -0.5f : 0.5f));
+}
+
+// Largest integer whose square is <= value; used to find the lit half-width.
+int integer_sqrt(int value) {
+  int result = 0;
+  int bit = 1 << 30;
+  while (bit > value) {
+    bit >>= 2;
+  }
+  while (bit != 0) {
+    if (value >= result + bit) {
+      value -= result + bit;
+      result = (result >> 1) + bit;
+    } else {
+      result >>= 1;
+    }
+    bit >>= 2;
+  }
+  return result;
+}
 
 bool is_wall_block(int col, int row) {
   if (col < 0 || col >= MAZE_BLOCK_COLS || row < 0 || row >= MAZE_BLOCK_ROWS) {
@@ -113,38 +186,116 @@ bool is_wall_block(int col, int row) {
   return MAZE[row / CELL_BLOCKS][col / CELL_BLOCKS] == '#';
 }
 
-Vector2 direction_from_angle(float angle) {
-  return { std::sin(angle), -std::cos(angle) };
+#if DEMO_PROFILE
+uint32_t profile_mark_us;
+uint32_t profile_totals[3];
+uint32_t profile_frames;
+
+void profile_begin() {
+  profile_mark_us = platform_micros();
 }
 
-float raycast_walls(Vector2 origin, Vector2 dir, float max_dist) {
-  int col = static_cast<int>(std::floor(origin.x / BLOCK_SIZE));
-  int row = static_cast<int>(std::floor(origin.y / BLOCK_SIZE));
+void profile_mark(int slot) {
+  const uint32_t now = platform_micros();
+  profile_totals[slot] += now - profile_mark_us;
+  profile_mark_us = now;
+}
+
+void profile_end() {
+  profile_mark(2);
+  ++profile_frames;
+  if (profile_frames < 60) {
+    return;
+  }
+
+  const unsigned light_us = profile_totals[0] / profile_frames;
+  const unsigned obstacles_us = profile_totals[1] / profile_frames;
+  const unsigned player_us = profile_totals[2] / profile_frames;
+  trace("demo: light %u us, obstacles %u us, player %u us, total %u us\n", light_us,
+        obstacles_us, player_us, light_us + obstacles_us + player_us);
+
+  profile_totals[0] = 0;
+  profile_totals[1] = 0;
+  profile_totals[2] = 0;
+  profile_frames = 0;
+}
+#else
+inline void profile_begin() {
+}
+
+inline void profile_mark(int) {
+}
+
+inline void profile_end() {
+}
+#endif
+
+struct RayDir {
+  int x;
+  int y;
+};
+
+struct ShadowDirection {
+  float x;
+  float y;
+};
+
+// Ray and shadow angles are constant, so all trig is done once instead of
+// ~1000 sin/cos calls per frame.
+RayDir RAY_DIRECTIONS[LIGHT_RAYS];
+ShadowDirection SHADOW_DIRECTIONS[SHADOW_CIRCLE_SEGMENTS];
+bool light_tables_ready = false;
+
+void init_light_tables() {
+  for (int i = 0; i < LIGHT_RAYS; ++i) {
+    const float angle = TWO_PI * static_cast<float>(i) / static_cast<float>(LIGHT_RAYS);
+    const float dir_x = std::sin(angle);
+    const float dir_y = -std::cos(angle);
+    RAY_DIRECTIONS[i].x = static_cast<int>(dir_x * DIR_ONE + (dir_x < 0.0f ? -0.5f : 0.5f));
+    RAY_DIRECTIONS[i].y = static_cast<int>(dir_y * DIR_ONE + (dir_y < 0.0f ? -0.5f : 0.5f));
+  }
+
+  for (int i = 0; i < SHADOW_CIRCLE_SEGMENTS; ++i) {
+    const float angle =
+      TWO_PI * static_cast<float>(i) / static_cast<float>(SHADOW_CIRCLE_SEGMENTS);
+    SHADOW_DIRECTIONS[i] = { std::cos(angle), std::sin(angle) };
+  }
+
+  light_tables_ready = true;
+}
+
+// Distance to the first wall along the ray, in 4.4 fixed point. The DDA is
+// integer: soft-float compares and divisions dominated the frame on the C3.
+int raycast_walls(int origin_x, int origin_y, RayDir dir, int max_dist) {
+  int col = (origin_x >> RAY_SUBPIXEL_BITS) / BLOCK_SIZE;
+  int row = (origin_y >> RAY_SUBPIXEL_BITS) / BLOCK_SIZE;
   if (is_wall_block(col, row)) {
-    return 0.0f;
+    return 0;
   }
 
-  int step_x = (dir.x > 0.0f) - (dir.x < 0.0f);
-  int step_y = (dir.y > 0.0f) - (dir.y < 0.0f);
-  float t_delta_x = step_x != 0 ? std::fabs(BLOCK_SIZE / dir.x) : RAY_INFINITY;
-  float t_delta_y = step_y != 0 ? std::fabs(BLOCK_SIZE / dir.y) : RAY_INFINITY;
+  const int step_x = (dir.x > 0) - (dir.x < 0);
+  const int step_y = (dir.y > 0) - (dir.y < 0);
+  const int t_delta_x =
+    step_x != 0 ? (BLOCK_SIZE * RAY_SUBPIXEL * DIR_ONE) / std::abs(dir.x) : RAY_T_INFINITY;
+  const int t_delta_y =
+    step_y != 0 ? (BLOCK_SIZE * RAY_SUBPIXEL * DIR_ONE) / std::abs(dir.y) : RAY_T_INFINITY;
 
-  float t_max_x = RAY_INFINITY;
+  int t_max_x = RAY_T_INFINITY;
   if (step_x > 0) {
-    t_max_x = ((col + 1) * BLOCK_SIZE - origin.x) / dir.x;
+    t_max_x = (((col + 1) * BLOCK_SIZE * RAY_SUBPIXEL) - origin_x) * DIR_ONE / dir.x;
   } else if (step_x < 0) {
-    t_max_x = (col * BLOCK_SIZE - origin.x) / dir.x;
+    t_max_x = ((col * BLOCK_SIZE * RAY_SUBPIXEL) - origin_x) * DIR_ONE / dir.x;
   }
 
-  float t_max_y = RAY_INFINITY;
+  int t_max_y = RAY_T_INFINITY;
   if (step_y > 0) {
-    t_max_y = ((row + 1) * BLOCK_SIZE - origin.y) / dir.y;
+    t_max_y = (((row + 1) * BLOCK_SIZE * RAY_SUBPIXEL) - origin_y) * DIR_ONE / dir.y;
   } else if (step_y < 0) {
-    t_max_y = (row * BLOCK_SIZE - origin.y) / dir.y;
+    t_max_y = ((row * BLOCK_SIZE * RAY_SUBPIXEL) - origin_y) * DIR_ONE / dir.y;
   }
 
   while (true) {
-    float t;
+    int t;
     if (t_max_x < t_max_y) {
       t = t_max_x;
       col += step_x;
@@ -318,99 +469,201 @@ void move_with_collision(Vector2& pos, Vector2 delta, float radius) {
 
 void draw_filled_circle(int cx, int cy, int radius, int color) {
   for (int dy = -radius; dy <= radius; ++dy) {
-    int dx = static_cast<int>(std::sqrt(static_cast<float>(radius * radius - dy * dy)));
+    int dx = integer_sqrt(radius * radius - dy * dy);
     draw_hline(cx - dx, cy + dy, dx * 2 + 1, color);
   }
 }
 
-void fill_light_polygon(const Vector2* vertices, int count, Vector2 origin) {
-  if (count < 3) {
-    return;
-  }
+// One set of scratch buffers for the scanline fill; fills never nest.
+constexpr int MAX_POLYGON_VERTICES = LIGHT_RAYS;
+int16_t span_head[LCD_HEIGHT];
+int16_t span_next[MAX_POLYGON_VERTICES];
+int16_t span_end_row[MAX_POLYGON_VERTICES];
+int16_t span_active[MAX_POLYGON_VERTICES];
 
-  float min_y = vertices[0].y;
-  float max_y = vertices[0].y;
-  for (int i = 1; i < count; ++i) {
-    min_y = std::min(min_y, vertices[i].y);
-    max_y = std::max(max_y, vertices[i].y);
-  }
 
-  int y_start = std::max(static_cast<int>(std::ceil(min_y)), 0);
-  int y_end = std::min(static_cast<int>(std::floor(max_y)), LCD_HEIGHT - 1);
-  static float xs[LIGHT_RAYS + 2];
+// Draws the dithered light for one scanline. Distance is compared in fixed
+// point, and whole 8-pixel groups are written with one lcd_set_byte: the light
+// is drawn onto a freshly cleared buffer, so a full byte can be replaced.
+void draw_light_span(int y, int x0, int x1, int origin_x, int origin_y) {
+  const int dy = (y << SUBPIXEL_BITS) - origin_y;
+  const int dy_sq = dy * dy;
+  const int* row_dither = BAYER_4X4[y & 3];
 
-  for (int y = y_start; y <= y_end; ++y) {
-    float fy = static_cast<float>(y) + 0.5f;
-    int count_x = 0;
+  int lo[4];
+  int hi[4];
+  int lo_min = LCD_WIDTH;
+  int lo_max = -1;
+  int hi_min = LCD_WIDTH;
+  int hi_max = -1;
+  bool all_phases = true;
 
-    for (int i = 0; i < count; ++i) {
-      const Vector2& a = vertices[i];
-      const Vector2& b = vertices[(i + 1) % count];
-      if ((fy >= a.y && fy < b.y) || (fy >= b.y && fy < a.y)) {
-        float t = (fy - a.y) / (b.y - a.y);
-        xs[count_x++] = a.x + (b.x - a.x) * t;
-      }
-    }
-
-    if (count_x < 2) {
+  for (int phase = 0; phase < 4; ++phase) {
+    const int budget = DITHER_CUTOFF_FIXED[row_dither[phase]] - dy_sq;
+    if (budget <= 0) {
+      lo[phase] = LCD_WIDTH + 1;
+      hi[phase] = LCD_WIDTH;
+      all_phases = false;
       continue;
     }
 
-    std::sort(xs, xs + count_x);
+    const int reach = integer_sqrt(budget - 1);
+    lo[phase] = ceil_div(origin_x - reach, SUBPIXEL);
+    hi[phase] = floor_div(origin_x + reach, SUBPIXEL);
+    lo_min = std::min(lo_min, lo[phase]);
+    lo_max = std::max(lo_max, lo[phase]);
+    hi_min = std::min(hi_min, hi[phase]);
+    hi_max = std::max(hi_max, hi[phase]);
+  }
 
-    for (int i = 0; i + 1 < count_x; i += 2) {
-      int x0 = std::max(static_cast<int>(std::ceil(xs[i] - 0.5f)), 0);
-      int x1 = std::min(static_cast<int>(std::floor(xs[i + 1] - 0.5f)), LCD_WIDTH - 1);
-      if (x0 > x1) {
-        continue;
+  if (hi_max < 0) {
+    return;
+  }
+
+  int x = std::max(x0, lo_min);
+  const int last_x = std::min(x1, hi_max);
+
+  while (x <= last_x) {
+    if ((x & 7) == 0 && x + 7 <= last_x) {
+      uint8_t value = 0;
+      if (all_phases && x >= lo_max && x + 7 <= hi_min) {
+        value = 0xFF;
+      } else {
+        for (int i = 0; i < 8; ++i) {
+          if (x + i >= lo[i & 3] && x + i <= hi[i & 3]) {
+            value |= static_cast<uint8_t>(0x80u >> i);
+          }
+        }
       }
+      lcd_set_byte(x >> 3, y, value);
+      x += 8;
+    } else {
+      if (x >= lo[x & 3] && x <= hi[x & 3]) {
+        lcd_draw_pixel(x, y, LCD_WHITE);
+      }
+      ++x;
+    }
+  }
+}
 
-      const float dy = static_cast<float>(y) - origin.y;
-      const float dy_sq = dy * dy;
-      for (int x = x0; x <= x1; ++x) {
-        const float dx = static_cast<float>(x) - origin.x;
-        const float dist_sq = dx * dx + dy_sq;
-        if (dist_sq >= MAX_LIGHT_DISTANCE_SQ) {
-          continue;
-        }
+void fill_solid_span(int y, int x0, int x1, int color) {
+  const uint8_t value = color == LCD_WHITE ? 0xFF : 0x00;
+  int x = x0;
+  while (x <= x1) {
+    if ((x & 7) == 0 && x + 7 <= x1) {
+      lcd_set_byte(x >> 3, y, value);
+      x += 8;
+    } else {
+      lcd_draw_pixel(x, y, color);
+      ++x;
+    }
+  }
+}
 
-        const int bayer = BAYER_4X4[y & 3][x & 3];
-        if (dist_sq >= DITHER_DISTANCE_SQ[bayer]) {
-          continue;
-        }
+template <typename SpanWriter>
+void fill_polygon(const ScreenPoint* vertices, int count, SpanWriter write_span) {
+  if (count < 3 || count > MAX_POLYGON_VERTICES) {
+    return;
+  }
 
-        draw_pixel(x, y, LCD_WHITE);
+  for (int y = 0; y < LCD_HEIGHT; ++y) {
+    span_head[y] = -1;
+  }
+
+  // Bucket every edge by the first scanline it crosses. Each row then only
+  // visits the few edges that are on its boundary, instead of testing all of
+  // them (which also cost a runtime `%` per test).
+  int first_row = LCD_HEIGHT;
+  int last_row = -1;
+  for (int i = 0; i < count; ++i) {
+    const ScreenPoint& a = vertices[i];
+    const ScreenPoint& b = vertices[i + 1 == count ? 0 : i + 1];
+    const int low_y = std::min(a.y, b.y);
+    const int high_y = std::max(a.y, b.y);
+    if (low_y == high_y) {
+      continue;
+    }
+
+    const int start = std::max(ceil_div(low_y - SUBPIXEL / 2, SUBPIXEL), 0);
+    const int end = std::min(floor_div(high_y - 1 - SUBPIXEL / 2, SUBPIXEL), LCD_HEIGHT - 1);
+    if (start > end) {
+      continue;
+    }
+
+    span_end_row[i] = static_cast<int16_t>(end);
+    span_next[i] = span_head[start];
+    span_head[start] = static_cast<int16_t>(i);
+    first_row = std::min(first_row, start);
+    last_row = std::max(last_row, end);
+  }
+
+  int xs[MAX_SPAN_CROSSINGS];
+  int active_count = 0;
+
+  for (int y = first_row; y <= last_row; ++y) {
+    for (int16_t edge = span_head[y]; edge >= 0; edge = span_next[edge]) {
+      span_active[active_count++] = edge;
+    }
+
+    int kept = 0;
+    for (int i = 0; i < active_count; ++i) {
+      if (span_end_row[span_active[i]] >= y) {
+        span_active[kept++] = span_active[i];
+      }
+    }
+    active_count = kept;
+    if (active_count == 0) {
+      continue;
+    }
+
+    const int sample_y = (y << SUBPIXEL_BITS) + SUBPIXEL / 2;
+    int crossings = 0;
+    for (int i = 0; i < active_count && crossings < MAX_SPAN_CROSSINGS; ++i) {
+      const int edge = span_active[i];
+      const ScreenPoint& a = vertices[edge];
+      const ScreenPoint& b = vertices[edge + 1 == count ? 0 : edge + 1];
+
+      // 8.8 slope keeps the multiply inside 32 bits: |slope * offset| is
+      // bounded by |dx << 8| because |offset| <= |dy|.
+      const int slope = ((b.x - a.x) << 8) / (b.y - a.y);
+      xs[crossings++] = a.x + ((slope * (sample_y - a.y)) >> 8);
+    }
+
+    // A row only crosses the boundary a handful of times.
+    for (int i = 1; i < crossings; ++i) {
+      const int value = xs[i];
+      int j = i - 1;
+      while (j >= 0 && xs[j] > value) {
+        xs[j + 1] = xs[j];
+        --j;
+      }
+      xs[j + 1] = value;
+    }
+
+    for (int i = 0; i + 1 < crossings; i += 2) {
+      const int x0 = std::max(ceil_div(xs[i] - SUBPIXEL / 2, SUBPIXEL), 0);
+      const int x1 = std::min(floor_div(xs[i + 1] - SUBPIXEL / 2, SUBPIXEL), LCD_WIDTH - 1);
+      if (x0 <= x1) {
+        write_span(y, x0, x1);
       }
     }
   }
 }
 
-void draw_maze(int camera_x, int camera_y) {
-  int first_col = std::max(camera_x / BLOCK_SIZE, 0);
-  int last_col = std::min((camera_x + LCD_WIDTH - 1) / BLOCK_SIZE, MAZE_BLOCK_COLS - 1);
-  int first_row = std::max(camera_y / BLOCK_SIZE, 0);
-  int last_row = std::min((camera_y + LCD_HEIGHT - 1) / BLOCK_SIZE, MAZE_BLOCK_ROWS - 1);
-
-  for (int row = first_row; row <= last_row; ++row) {
-    for (int col = first_col; col <= last_col; ++col) {
-      if (!is_wall_block(col, row)) {
-        continue;
-      }
-
-      // Leave a one-pixel gap on the right and bottom edges so neighbouring
-      // blocks stay distinguishable.
-      int x0 = std::max(col * BLOCK_SIZE - camera_x, 0);
-      int y0 = std::max(row * BLOCK_SIZE - camera_y, 0);
-      int x1 = std::min((col + 1) * BLOCK_SIZE - camera_x - 1, LCD_WIDTH);
-      int y1 = std::min((row + 1) * BLOCK_SIZE - camera_y - 1, LCD_HEIGHT);
-      if (x0 >= x1 || y0 >= y1) {
-        continue;
-      }
-
-      draw_rectangle(x0, y0, x1 - x0, y1 - y0, LCD_BLACK);
-    }
-  }
+void fill_light_polygon(const ScreenPoint* vertices, int count, int origin_x, int origin_y) {
+  fill_polygon(vertices, count, [origin_x, origin_y](int y, int x0, int x1) {
+    draw_light_span(y, x0, x1, origin_x, origin_y);
+  });
 }
+
+void fill_solid_polygon(const ScreenPoint* vertices, int count, int color) {
+  fill_polygon(vertices, count,
+               [color](int y, int x0, int x1) { fill_solid_span(y, x0, x1, color); });
+}
+
+// Walls are not drawn: they are black, the background is black, and the ray
+// cast light stops at their faces, so filling them in would only repaint pixels
+// that are already dark. That saves roughly 9k pixel writes per frame.
 
 void draw_filled_rotated_rect(Vector2 center, float half_width, float half_height, float angle,
                               int color) {
@@ -424,13 +677,21 @@ void draw_filled_rotated_rect(Vector2 center, float half_width, float half_heigh
   int min_y = std::max(static_cast<int>(std::floor(center.y - extent_y)), 0);
   int max_y = std::min(static_cast<int>(std::ceil(center.y + extent_y)), LCD_HEIGHT - 1);
 
+  // 8.8 fixed point: this is a per-pixel loop, keep it away from soft floats.
+  const int cos_q = static_cast<int>(c * 256.0f);
+  const int sin_q = static_cast<int>(s * 256.0f);
+  const int center_x_q = static_cast<int>(center.x * 256.0f);
+  const int center_y_q = static_cast<int>(center.y * 256.0f);
+  const int half_width_q = static_cast<int>(half_width * 256.0f);
+  const int half_height_q = static_cast<int>(half_height * 256.0f);
+
   for (int y = min_y; y <= max_y; ++y) {
     for (int x = min_x; x <= max_x; ++x) {
-      const float dx = static_cast<float>(x) - center.x;
-      const float dy = static_cast<float>(y) - center.y;
-      const float local_x = dx * c + dy * s;
-      const float local_y = -dx * s + dy * c;
-      if (std::fabs(local_x) <= half_width && std::fabs(local_y) <= half_height) {
+      const int dx = (x << 8) - center_x_q;
+      const int dy = (y << 8) - center_y_q;
+      const int local_x = (dx * cos_q + dy * sin_q) >> 8;
+      const int local_y = (-dx * sin_q + dy * cos_q) >> 8;
+      if (std::abs(local_x) <= half_width_q && std::abs(local_y) <= half_height_q) {
         draw_pixel(x, y, color);
       }
     }
@@ -484,48 +745,17 @@ int convex_hull(Vector2* points, int count, Vector2* hull) {
   return k;
 }
 
-void fill_solid_polygon(const Vector2* vertices, int count, int color) {
-  if (count < 3) {
+void fill_shadow_hull(const Vector2* hull, int hull_count, int camera_x, int camera_y) {
+  static ScreenPoint polygon[MAX_SHADOW_HULL_POINTS];
+  if (hull_count < 3) {
     return;
   }
 
-  float min_y = vertices[0].y;
-  float max_y = vertices[0].y;
-  for (int i = 1; i < count; ++i) {
-    min_y = std::min(min_y, vertices[i].y);
-    max_y = std::max(max_y, vertices[i].y);
+  for (int i = 0; i < hull_count; ++i) {
+    polygon[i].x = to_subpixel(hull[i].x - camera_x);
+    polygon[i].y = to_subpixel(hull[i].y - camera_y);
   }
-
-  int y_start = std::max(static_cast<int>(std::ceil(min_y)), 0);
-  int y_end = std::min(static_cast<int>(std::floor(max_y)), LCD_HEIGHT - 1);
-  static float xs[MAX_SHADOW_HULL_POINTS];
-
-  for (int y = y_start; y <= y_end; ++y) {
-    float fy = static_cast<float>(y) + 0.5f;
-    int count_x = 0;
-
-    for (int i = 0; i < count; ++i) {
-      const Vector2& a = vertices[i];
-      const Vector2& b = vertices[(i + 1) % count];
-      if ((fy >= a.y && fy < b.y) || (fy >= b.y && fy < a.y)) {
-        float t = (fy - a.y) / (b.y - a.y);
-        xs[count_x++] = a.x + (b.x - a.x) * t;
-      }
-    }
-
-    if (count_x < 2) {
-      continue;
-    }
-
-    std::sort(xs, xs + count_x);
-    for (int i = 0; i + 1 < count_x; i += 2) {
-      int x0 = std::max(static_cast<int>(std::ceil(xs[i] - 0.5f)), 0);
-      int x1 = std::min(static_cast<int>(std::floor(xs[i + 1] - 0.5f)), LCD_WIDTH - 1);
-      if (x0 <= x1) {
-        draw_hline(x0, y, x1 - x0 + 1, color);
-      }
-    }
-  }
+  fill_solid_polygon(polygon, hull_count, LCD_BLACK);
 }
 
 void draw_obstacle_shadows(Vector2 player_world, int camera_x, int camera_y) {
@@ -547,10 +777,8 @@ void draw_obstacle_shadows(Vector2 player_world, int camera_x, int camera_y) {
 
     int count = 0;
     for (int i = 0; i < SHADOW_CIRCLE_SEGMENTS; ++i) {
-      const float a =
-        2.0f * PI * static_cast<float>(i) / static_cast<float>(SHADOW_CIRCLE_SEGMENTS);
-      const float ca = std::cos(a);
-      const float sa = std::sin(a);
+      const float ca = SHADOW_DIRECTIONS[i].x;
+      const float sa = SHADOW_DIRECTIONS[i].y;
       points[count++] = { circle.center.x + ca * circle.radius,
                           circle.center.y + sa * circle.radius };
       points[count++] = { shadow_center.x + ca * circle.radius * scale,
@@ -559,11 +787,7 @@ void draw_obstacle_shadows(Vector2 player_world, int camera_x, int camera_y) {
 
     const int hull_count = convex_hull(points, count, hull);
     if (hull_count >= 3) {
-      for (int i = 0; i < hull_count; ++i) {
-        hull[i].x -= camera_x;
-        hull[i].y -= camera_y;
-      }
-      fill_solid_polygon(hull, hull_count, LCD_BLACK);
+      fill_shadow_hull(hull, hull_count, camera_x, camera_y);
     }
   }
 
@@ -599,28 +823,33 @@ void draw_obstacle_shadows(Vector2 player_world, int camera_x, int camera_y) {
 
     const int hull_count = convex_hull(points, count, hull);
     if (hull_count >= 3) {
-      for (int i = 0; i < hull_count; ++i) {
-        hull[i].x -= camera_x;
-        hull[i].y -= camera_y;
-      }
-      fill_solid_polygon(hull, hull_count, LCD_BLACK);
+      fill_shadow_hull(hull, hull_count, camera_x, camera_y);
     }
   }
 }
 
 void draw_light(Vector2 player_world, Vector2 player_screen, int camera_x, int camera_y) {
-  constexpr int POLYGON_VERTICES = LIGHT_RAYS;
-  static Vector2 vertices[POLYGON_VERTICES];
-
-  for (int i = 0; i < LIGHT_RAYS; ++i) {
-    const float angle = TWO_PI * static_cast<float>(i) / static_cast<float>(LIGHT_RAYS);
-    const Vector2 dir = direction_from_angle(angle);
-    const float dist = raycast_walls(player_world, dir, MAX_LIGHT_DISTANCE);
-    const Vector2 hit_world{ player_world.x + dir.x * dist, player_world.y + dir.y * dist };
-    vertices[i] = { hit_world.x - camera_x, hit_world.y - camera_y };
+  static ScreenPoint vertices[LIGHT_RAYS];
+  if (!light_tables_ready) {
+    init_light_tables();
   }
 
-  fill_light_polygon(vertices, POLYGON_VERTICES, player_screen);
+  const int origin_x = to_ray_subpixel(player_world.x);
+  const int origin_y = to_ray_subpixel(player_world.y);
+  const int camera_x_ray = camera_x << RAY_SUBPIXEL_BITS;
+  const int camera_y_ray = camera_y << RAY_SUBPIXEL_BITS;
+
+  for (int i = 0; i < LIGHT_RAYS; ++i) {
+    const RayDir& dir = RAY_DIRECTIONS[i];
+    const int dist = raycast_walls(origin_x, origin_y, dir, MAX_LIGHT_DISTANCE_FIXED);
+    const int hit_x = origin_x + dir.x * dist / DIR_ONE;
+    const int hit_y = origin_y + dir.y * dist / DIR_ONE;
+    vertices[i].x = (hit_x - camera_x_ray) << (SUBPIXEL_BITS - RAY_SUBPIXEL_BITS);
+    vertices[i].y = (hit_y - camera_y_ray) << (SUBPIXEL_BITS - RAY_SUBPIXEL_BITS);
+  }
+
+  fill_light_polygon(vertices, LIGHT_RAYS, to_subpixel(player_screen.x),
+                     to_subpixel(player_screen.y));
   draw_obstacle_shadows(player_world, camera_x, camera_y);
 }
 
@@ -671,18 +900,22 @@ Screen* DemoScreen::update() {
 
 void DemoScreen::draw() const {
   fill_screen_buffer(LCD_BLACK);
+  profile_begin();
 
   const int camera_x = static_cast<int>(std::lround(camera_pos_.x));
   const int camera_y = static_cast<int>(std::lround(camera_pos_.y));
   const Vector2 player_screen{ player_pos_.x - camera_x, player_pos_.y - camera_y };
 
   draw_light(player_pos_, player_screen, camera_x, camera_y);
-  draw_maze(camera_x, camera_y);
+  profile_mark(0);
+
   draw_obstacles(camera_x, camera_y);
+  profile_mark(1);
 
   const int cx = static_cast<int>(std::lround(player_screen.x));
   const int cy = static_cast<int>(std::lround(player_screen.y));
   draw_filled_circle(cx, cy, static_cast<int>(PLAYER_RADIUS), LCD_BLACK);
+  profile_end();
 }
 
 void DemoScreen::close() {

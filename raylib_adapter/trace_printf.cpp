@@ -1,6 +1,15 @@
 #include "../orbitris_esp32/trace.h"
 
+#include <chrono>
+
 void do_print(const char *msg)
 {
-    printf(msg);
+    printf("%s", msg);
+}
+
+uint32_t platform_micros()
+{
+    using namespace std::chrono;
+    static const auto start = steady_clock::now();
+    return static_cast<uint32_t>(duration_cast<microseconds>(steady_clock::now() - start).count());
 }
