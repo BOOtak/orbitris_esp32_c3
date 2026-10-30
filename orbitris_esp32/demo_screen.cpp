@@ -123,19 +123,28 @@ constexpr int MAX_LIGHT_DISTANCE_FIXED = static_cast<int>(MAX_LIGHT_DISTANCE) * 
 constexpr int dither_cutoff_fixed(int bayer) {
   const float threshold = (static_cast<float>(bayer) + 0.5f) / 16.0f;
   const float cutoff =
-    LIGHT_FULL_DISTANCE_SQ +
-    (1.0f - threshold) * (MAX_LIGHT_DISTANCE_SQ - LIGHT_FULL_DISTANCE_SQ);
+    LIGHT_FULL_DISTANCE_SQ + (1.0f - threshold) * (MAX_LIGHT_DISTANCE_SQ - LIGHT_FULL_DISTANCE_SQ);
   return static_cast<int>(cutoff * static_cast<float>(SUBPIXEL * SUBPIXEL));
 }
 
 // Squared light cutoff per Bayer cell, scaled by SUBPIXEL^2 to match the
 // fixed-point distance.
 constexpr int DITHER_CUTOFF_FIXED[16] = {
-  dither_cutoff_fixed(0),  dither_cutoff_fixed(1),  dither_cutoff_fixed(2),
-  dither_cutoff_fixed(3),  dither_cutoff_fixed(4),  dither_cutoff_fixed(5),
-  dither_cutoff_fixed(6),  dither_cutoff_fixed(7),  dither_cutoff_fixed(8),
-  dither_cutoff_fixed(9),  dither_cutoff_fixed(10), dither_cutoff_fixed(11),
-  dither_cutoff_fixed(12), dither_cutoff_fixed(13), dither_cutoff_fixed(14),
+  dither_cutoff_fixed(0),
+  dither_cutoff_fixed(1),
+  dither_cutoff_fixed(2),
+  dither_cutoff_fixed(3),
+  dither_cutoff_fixed(4),
+  dither_cutoff_fixed(5),
+  dither_cutoff_fixed(6),
+  dither_cutoff_fixed(7),
+  dither_cutoff_fixed(8),
+  dither_cutoff_fixed(9),
+  dither_cutoff_fixed(10),
+  dither_cutoff_fixed(11),
+  dither_cutoff_fixed(12),
+  dither_cutoff_fixed(13),
+  dither_cutoff_fixed(14),
   dither_cutoff_fixed(15),
 };
 
@@ -560,7 +569,7 @@ void fill_solid_span(int y, int x0, int x1, int color) {
   }
 }
 
-template <typename SpanWriter>
+template<typename SpanWriter>
 void fill_polygon(const ScreenPoint* vertices, int count, SpanWriter write_span) {
   if (count < 3 || count > MAX_POLYGON_VERTICES) {
     return;
@@ -658,7 +667,9 @@ void fill_light_polygon(const ScreenPoint* vertices, int count, int origin_x, in
 
 void fill_solid_polygon(const ScreenPoint* vertices, int count, int color) {
   fill_polygon(vertices, count,
-               [color](int y, int x0, int x1) { fill_solid_span(y, x0, x1, color); });
+               [color](int y, int x0, int x1) {
+                 fill_solid_span(y, x0, x1, color);
+               });
 }
 
 // Walls are not drawn: they are black, the background is black, and the ray
@@ -815,10 +826,8 @@ void draw_obstacle_shadows(Vector2 player_world, int camera_x, int camera_y) {
     for (int i = 0; i < 4; ++i) {
       points[count++] = { rect.center.x + local_x[i] * c - local_y[i] * s,
                           rect.center.y + local_x[i] * s + local_y[i] * c };
-      points[count++] = { shadow_center.x + (local_x[i] * scale) * c -
-                            (local_y[i] * scale) * s,
-                          shadow_center.y + (local_x[i] * scale) * s +
-                            (local_y[i] * scale) * c };
+      points[count++] = { shadow_center.x + (local_x[i] * scale) * c - (local_y[i] * scale) * s,
+                          shadow_center.y + (local_x[i] * scale) * s + (local_y[i] * scale) * c };
     }
 
     const int hull_count = convex_hull(points, count, hull);
