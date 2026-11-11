@@ -127,7 +127,7 @@ outline; visible only when lit (see §8), with "eyes" (2 pixels) hinted in the
 dark.
 
 A cat is a circle like the player, uses the same wall collision, and walks over
-targets and the box (no collision).
+targets and the box (no collision). Cats collide with the player and each other.
 
 **Speed:** cats are slower than the walking player but faster than the carrying
 player. This is the single most important tuning knob — it defines whether
@@ -139,7 +139,9 @@ chases feel winnable.
 
 Deterministic, readable states (no pure random movement). Pathfinding is BFS on
 the 15×15 cell grid (225 nodes, trivially cheap on the C3); cats follow the
-waypoint chain with the slide collision and re-plan when a state changes.
+waypoint chain with the slide collision and re-plan when a state changes. BFS
+paths are string-pulled with wall clearance, so cats move diagonally where the
+maze allows instead of only along cell axes.
 
 | State | Trigger | Behaviour | Exits |
 |---|---|---|---|
@@ -229,8 +231,8 @@ Reuse directly:
 
 New pieces:
 
-- BFS pathfinder over the 15×15 cell grid (small, static helper).
-- Cat struct + state machine.
+- BFS pathfinder over the 15×15 cell grid (`pathfind.{h,cpp}`; implemented in M2).
+- Cat struct + state machine (`cat.{h,cpp}`; M2 has `Wander`).
 - Mess meter + target state.
 - Pick-up/carry/deposit logic.
 
@@ -241,7 +243,7 @@ New pieces:
 1. **M1 — Scaffold (implemented).** `HouseScreen` renders the maze, darkness overlay, player
    movement, 4 static cats (white + outline), rugs + bed + box as passable
    white-outline rects.
-2. **M2 — Cat movement.** BFS pathfinding + wander + slide collision.
+2. **M2 — Cat movement (implemented).** BFS pathfinding + wander + slide collision.
 3. **M3 — Guard loop.** Bladder timer → seek → peeing → mess meter → lose
    condition; light scares cats (`flee`).
 4. **M4 — Hunt loop.** Grab / carry (weight) / drop / box deposit → win condition.

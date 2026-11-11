@@ -39,9 +39,11 @@ Shared code may call only symbols implemented by both adapters: `lcd_draw_pixel`
 ## Architecture notes
 
 - `game_main.cpp` is the screen state machine. `rules[]` selects transitions; `init_game()` constructs screens. A new `Screen` subclass needs registration in `screen.h`/`screen.cpp`, construction in `init_game()`, and usually a transition rule. Current boot is `screens::house_screen`.
-- `world.{h,cpp}`: 15x15 maze (48px cells = 3x16px blocks), `is_wall_block`, wall-only collision (`deepest_contact_walls`, `move_with_collision`), and circle drawing. Edit the maze in `world.cpp`.
+- `world.{h,cpp}`: 15x15 maze (720x720 px world, 48px cells = 3x16px blocks), `is_wall_block`, wall-only collision (`deepest_contact_walls`, `move_with_collision`, `move_with_collision_circles`), and circle drawing. Edit the maze in `world.cpp`.
+- `pathfind.{h,cpp}`: 4-neighbor BFS over the 15x15 cell grid. `find_path` returns cell waypoints; `cell_to_world`/`world_to_cell` convert between cells and pixels.
+- `cat.{h,cpp}`: `Cat` struct + M2 `Wander` state. Cats follow BFS waypoints with `move_with_collision_circles`, string-pull paths into diagonal segments where walls allow, collide with the player and each other, and re-plan after being blocked.
 - `light.{h,cpp}`: fixed-point 360-degree light pipeline: DDA wall raycast, scanline polygon fill, Bayer dither. `draw_darkness_polygon` is the subtractive path used by the game (clears unlit pixels via `lcd_and_byte`); `fill_light_polygon`/`fill_solid_polygon` are additive/solid helpers kept for reuse.
-- `house_screen.{h,cpp}`: Cat Guard M1 scaffold. Render order is white fill, black scene (outlines/player), then darkness. Cats, rugs, bed, and box are passable. Controls: arrows move, B runs. Player start/speed, cats, and target placements are tunable constants at the top of `house_screen.cpp`.
+- `house_screen.{h,cpp}`: Cat Guard M1/M2 scaffold. Render order is white fill, black scene (outlines/player), then darkness. Cats, rugs, bed, and box are passable. Controls: arrows move, B runs. Player start/speed, cats, and target placements are tunable constants at the top of `house_screen.cpp`; cat speeds/timers live in `cat.h`.
 - The C3 has no FPU. Keep per-pixel light math fixed-point/integer and batch LCD writes through `lcd_set_byte`/`lcd_and_byte`; avoid adding float math to the lighting hot path.
 - Persistence stores raw `Stats`/`HighscoreTable` blobs. Changing their layout invalidates `stats.dat`/`highscores.dat` and device NVS data.
 

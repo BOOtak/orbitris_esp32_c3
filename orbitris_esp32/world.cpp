@@ -113,8 +113,18 @@ Contact deepest_contact_walls(Vector2 pos, float radius) {
   return deepest;
 }
 
-bool resolve_penetration_walls(Vector2& pos, float radius) {
-  const Contact contact = deepest_contact_walls(pos, radius);
+static Contact deepest_contact_circles(Vector2 pos, float radius, const Vector2* centers,
+                                      const float* radii, int count) {
+  Contact deepest = deepest_contact_walls(pos, radius);
+  for (int i = 0; i < count; ++i) {
+    keep_deeper(deepest, circle_contact(pos, radius, centers[i], radii[i]));
+  }
+  return deepest;
+}
+
+static bool resolve_penetration_circles(Vector2& pos, float radius, const Vector2* centers,
+                                        const float* radii, int count) {
+  const Contact contact = deepest_contact_circles(pos, radius, centers, radii, count);
   if (!contact.hit) {
     return false;
   }
@@ -124,8 +134,11 @@ bool resolve_penetration_walls(Vector2& pos, float radius) {
   return true;
 }
 
-void move_with_collision(Vector2& pos, Vector2 delta, float radius) {
-  for (int i = 0; i < MAX_RESOLVE_ITERATIONS && resolve_penetration_walls(pos, radius); ++i) {
+static void move_with_collision_impl(Vector2& pos, Vector2 delta, float radius,
+                                     const Vector2* centers, const float* radii, int count) {
+  for (int i = 0; i < MAX_RESOLVE_ITERATIONS &&
+                  resolve_penetration_circles(pos, radius, centers, radii, count);
+       ++i) {
   }
 
   const float distance = std::sqrt(delta.x * delta.x + delta.y * delta.y);
@@ -139,9 +152,24 @@ void move_with_collision(Vector2& pos, Vector2 delta, float radius) {
 
   for (int s = 0; s < steps; ++s) {
     pos += step;
-    for (int i = 0; i < MAX_RESOLVE_ITERATIONS && resolve_penetration_walls(pos, radius); ++i) {
+    for (int i = 0; i < MAX_RESOLVE_ITERATIONS &&
+                    resolve_penetration_circles(pos, radius, centers, radii, count);
+         ++i) {
     }
   }
+}
+
+bool resolve_penetration_walls(Vector2& pos, float radius) {
+  return resolve_penetration_circles(pos, radius, nullptr, nullptr, 0);
+}
+
+void move_with_collision(Vector2& pos, Vector2 delta, float radius) {
+  move_with_collision_impl(pos, delta, radius, nullptr, nullptr, 0);
+}
+
+void move_with_collision_circles(Vector2& pos, Vector2 delta, float radius,
+                                 const Vector2* centers, const float* radii, int count) {
+  move_with_collision_impl(pos, delta, radius, centers, radii, count);
 }
 
 void draw_filled_circle(int cx, int cy, int radius, int color) {

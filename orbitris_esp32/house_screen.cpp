@@ -2,11 +2,14 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 
+#include "cat.h"
 #include "const.h"
 #include "draw.h"
 #include "input.h"
 #include "light.h"
+#include "trace.h"
 #include "world.h"
 
 namespace {
@@ -20,8 +23,6 @@ constexpr auto PLAYER_START = Vector2{ 3, 11 } * BLOCK_SIZE_PX + PLAYER_RADIUS;
 constexpr float MOVE_SPEED = 1.8f;
 constexpr float RUN_MULTIPLIER = 2.0f;
 
-constexpr float CAT_RADIUS = 10.0f;
-
 // Passable pee targets: white interiors, black outlines.
 constexpr auto BED = Rectangle{ 4, 12, 2, 2 } * BLOCK_SIZE_PX;
 constexpr auto BOX = Rectangle{ 7, 8, 1, 1 } * BLOCK_SIZE_PX;
@@ -31,12 +32,21 @@ constexpr Rectangle RUGS[] = {
   Rectangle{ 12, 12, 1, 1 } * BLOCK_SIZE_PX,
 };
 
-constexpr Vector2 CATS[] = {
-  Vector2{ 1, 5 } * BLOCK_SIZE_PX + CAT_RADIUS,
-  Vector2{ 2, 2 } * BLOCK_SIZE_PX + CAT_RADIUS,
-  Vector2{ 11, 1 } * BLOCK_SIZE_PX + CAT_RADIUS,
-  Vector2{ 12, 7 } * BLOCK_SIZE_PX + CAT_RADIUS,
+struct CatSpawn {
+  int col;
+  int row;
 };
+
+constexpr CatSpawn CAT_SPAWNS[] = {
+  { 1, 5 },
+  { 2, 2 },
+  { 11, 1 },
+  { 12, 7 },
+};
+
+constexpr int CAT_COUNT = static_cast<int>(sizeof(CAT_SPAWNS) / sizeof(CAT_SPAWNS[0]));
+
+Cat cats[CAT_COUNT];
 
 int screen_x(float world_x, int camera_x) {
   return static_cast<int>(std::lround(world_x - camera_x));
@@ -59,6 +69,10 @@ HouseScreen::HouseScreen()
 
 void HouseScreen::init() {
   player_pos_ = PLAYER_START;
+  std::srand(platform_micros());
+  for (int i = 0; i < CAT_COUNT; ++i) {
+    cat_init(cats[i], CAT_SPAWNS[i].col, CAT_SPAWNS[i].row);
+  }
   update_camera();
 }
 
@@ -88,8 +102,18 @@ Screen* HouseScreen::update() {
     const float speed = is_key_down(ESP_KEY_B) ? MOVE_SPEED * RUN_MULTIPLIER : MOVE_SPEED;
     const float length = std::sqrt(dir.x * dir.x + dir.y * dir.y);
     const float step = speed / length;
-    move_with_collision(player_pos_, { dir.x * step, dir.y * step },
-                        PLAYER_COLLISION_RADIUS);
+    Vector2 cat_centers[CAT_COUNT];
+    float cat_radii[CAT_COUNT];
+    for (int i = 0; i < CAT_COUNT; ++i) {
+      cat_centers[i] = cats[i].pos;
+      cat_radii[i] = CAT_RADIUS;
+    }
+    move_with_collision_circles(player_pos_, { dir.x * step, dir.y * step },
+                                PLAYER_COLLISION_RADIUS, cat_centers, cat_radii, CAT_COUNT);
+  }
+
+  for (int i = 0; i < CAT_COUNT; ++i) {
+    cat_update(cats[i], i, cats, CAT_COUNT, player_pos_, PLAYER_COLLISION_RADIUS);
   }
 
   update_camera();
@@ -117,8 +141,8 @@ void HouseScreen::draw() const {
                        static_cast<int>(std::lround(BOX.width - 8.0f)),
                        static_cast<int>(std::lround(BOX.height - 8.0f)), LCD_BLACK);
 
-  for (const auto& cat : CATS) {
-    draw_circle_lines(screen_x(cat.x, camera_x), screen_y(cat.y, camera_y),
+  for (const auto& cat : cats) {
+    draw_circle_lines(screen_x(cat.pos.x, camera_x), screen_y(cat.pos.y, camera_y),
                       static_cast<int>(std::lround(CAT_RADIUS)), LCD_BLACK);
   }
 

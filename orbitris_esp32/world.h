@@ -51,6 +51,10 @@ bool resolve_penetration_walls(Vector2& pos, float radius);
 
 void move_with_collision(Vector2& pos, Vector2 delta, float radius);
 
+// Walls plus a set of solid circles (e.g. the player or cats).
+void move_with_collision_circles(Vector2& pos, Vector2 delta, float radius,
+                                 const Vector2* centers, const float* radii, int count);
+
 void draw_filled_circle(int cx, int cy, int radius, int color);
 
 void draw_circle_lines(int cx, int cy, int radius, int color);
