@@ -3,9 +3,9 @@
 #include "game_utils.h"
 #include "screen.h"
 
-class DemoScreen : public Screen {
+class HouseScreen : public Screen {
 public:
-  DemoScreen();
+  HouseScreen();
 
   void init() override;
 

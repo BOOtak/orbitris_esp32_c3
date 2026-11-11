@@ -3,12 +3,12 @@
 #include <array>
 
 #include "authors_screen.h"
-#include "demo_screen.h"
 #include "game_screen.h"
 #include "game_over_screen.h"
 #include "game_utils.h"
 #include "highscore_input_screen.h"
 #include "highscore_screen.h"
+#include "house_screen.h"
 #include "menu_screen.h"
 #include "persist.h"
 #include "pause_screen.h"
@@ -84,7 +84,7 @@ void init_game() {
     stats = {};
   }
 
-  screens::demo_screen = new DemoScreen();
+  screens::house_screen = new HouseScreen();
   screens::game_screen = new GameScreen(stats);
   screens::game_over_screen = new GameOverScreen(stats, highscores);
   screens::menu_screen = new MenuScreen(stats);
@@ -99,7 +99,7 @@ void init_game() {
   //   current_screen = screens::menu_screen;
   // }
 
-  current_screen = screens::demo_screen;
+  current_screen = screens::house_screen;
 
   current_screen->init();
   in_transition = false;

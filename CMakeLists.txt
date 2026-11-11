@@ -33,20 +33,22 @@ add_executable(${PROJECT_NAME}
     orbitris_esp32/authors_screen.cpp
     orbitris_esp32/button.cpp
     orbitris_esp32/button_grid_manager.cpp
-    orbitris_esp32/demo_screen.cpp
     orbitris_esp32/explosion.cpp
     orbitris_esp32/game_main.cpp
     orbitris_esp32/game_over_screen.cpp
     orbitris_esp32/game_screen.cpp
     orbitris_esp32/highscore_input_screen.cpp
     orbitris_esp32/highscore_screen.cpp
+    orbitris_esp32/house_screen.cpp
     orbitris_esp32/orbital.cpp
     orbitris_esp32/menu_screen.cpp
+    orbitris_esp32/light.cpp
     orbitris_esp32/pause_screen.cpp
     orbitris_esp32/screen.cpp
     orbitris_esp32/tetramino.cpp
     orbitris_esp32/tilemap.cpp
     orbitris_esp32/transition.cpp
+    orbitris_esp32/world.cpp
     )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib common)

@@ -16,6 +16,14 @@ void lcd_set_byte(int cx, int y, uint8_t value) {
   }
 }
 
+void lcd_and_byte(int cx, int y, uint8_t value) {
+  for (int i = 0; i < 8; ++i) {
+    if ((value & (0x80u >> i)) == 0) {
+      DrawPixel(cx * 8 + i, y, BLACK);
+    }
+  }
+}
+
 void lcd_fill_buffer(int color) {
   ClearBackground(color == 1 ? WHITE : BLACK);
 }

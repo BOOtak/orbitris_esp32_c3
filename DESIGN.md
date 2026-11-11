@@ -67,7 +67,7 @@ white rectangle). The meter is shared across all targets.
 
 ## 4. The world
 
-Reuse the existing 20×15 maze (48 px corridors, 3×16 px blocks per cell).
+Reuse the existing 15×15 maze (720×720 px world, 48 px corridors, 3×16 px blocks per cell).
 
 | Object | Look | Collision | Purpose |
 |---|---|---|---|
@@ -138,7 +138,7 @@ chases feel winnable.
 ## 7. Enemy AI — state machine + BFS
 
 Deterministic, readable states (no pure random movement). Pathfinding is BFS on
-the 20×15 cell grid (≈300 nodes, trivially cheap on the C3); cats follow the
+the 15×15 cell grid (225 nodes, trivially cheap on the C3); cats follow the
 waypoint chain with the slide collision and re-plan when a state changes.
 
 | State | Trigger | Behaviour | Exits |
@@ -214,35 +214,31 @@ first playable build.
 
 ## 11. Technical integration
 
-The demo (`demo_screen.{h,cpp}`) is the sandbox; the real game is a new
-`Screen` subclass (e.g. `HouseScreen`) registered in `init_game()` with a
-transition rule, following the existing screen state machine.
+`HouseScreen` is the real game screen, registered in `init_game()` following the
+existing screen state machine. It uses the shared `world` (maze/collision) and
+`light` (raycast/polygon/darkness) modules.
 
 Reuse directly:
 
-- `raycast_walls` — LOS and "is lit" tests.
-- `deepest_contact` / `move_with_collision` — player and cat movement.
+- `raycast_walls` / `build_light_polygon` — LOS and "is lit" tests.
+- `deepest_contact_walls` / `move_with_collision` — player and cat movement.
 - `is_wall_block` — BFS grid definition.
-- the light pipeline (`draw_light`, `fill_polygon`, `draw_light_span`) — darkness
-  overlay, inverted.
+- the light pipeline (`fill_polygon`, `draw_darkness_polygon`) — darkness
+  overlay.
 - `lcd_*` / `draw_*` primitives, camera, input, persistence.
 
 New pieces:
 
-- BFS pathfinder over the 20×15 cell grid (small, static helper).
+- BFS pathfinder over the 15×15 cell grid (small, static helper).
 - Cat struct + state machine.
 - Mess meter + target state.
 - Pick-up/carry/deposit logic.
-- (Later) `HouseScreen` draw with the darkness overlay order.
-
-Keep the demo as the developer playground; the game shares the maze and movement
-but is a separate screen.
 
 ---
 
 ## 12. Milestones (build order)
 
-1. **M1 — Scaffold.** `HouseScreen` renders the maze, darkness overlay, player
+1. **M1 — Scaffold (implemented).** `HouseScreen` renders the maze, darkness overlay, player
    movement, 4 static cats (white + outline), rugs + bed + box as passable
    white-outline rects.
 2. **M2 — Cat movement.** BFS pathfinding + wander + slide collision.

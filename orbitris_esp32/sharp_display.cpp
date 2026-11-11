@@ -69,6 +69,7 @@ public:
   void clear();
 
   void set_byte(int cx, int y, uint8_t value);
+  void and_byte(int cx, int y, uint8_t value);
   void fill_buffer(int color);
   void fill_line(int line, uint8_t pattern, int color);
   void draw_pixel(int x, int y, int color);
@@ -223,6 +224,10 @@ void SharpDisplay::set_byte(int cx, int y, uint8_t value) {
   draw_buffer_->bytes[line_data_offset(y) + cx] = value;
 }
 
+void SharpDisplay::and_byte(int cx, int y, uint8_t value) {
+  draw_buffer_->bytes[line_data_offset(y) + cx] &= value;
+}
+
 void SharpDisplay::fill_buffer(int color) {
   const uint8_t value = (color == 1) ? 0xFF : 0x00;
   for (int y = 0; y < LCD_HEIGHT; ++y) {
@@ -271,6 +276,10 @@ void lcd_clear() {
 
 void lcd_set_byte(int cx, int y, uint8_t value) {
   display.set_byte(cx, y, value);
+}
+
+void lcd_and_byte(int cx, int y, uint8_t value) {
+  display.and_byte(cx, y, value);
 }
 
 void lcd_fill_buffer(int color) {

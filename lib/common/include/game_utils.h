@@ -11,6 +11,10 @@ constexpr Vector2 operator+(const Vector2& v1, const Vector2& v2) {
   return { v1.x + v2.x, v1.y + v2.y };
 }
 
+constexpr Vector2 operator+(const Vector2& v1, float offset) {
+  return { v1.x + offset, v1.y + offset };
+}
+
 constexpr Vector2 operator*(const Vector2& v, float scale) {
   return { v.x * scale, v.y * scale };
 }
@@ -35,6 +39,10 @@ struct Rectangle {
   float width;   // Rectangle width
   float height;  // Rectangle height
 };
+
+constexpr Rectangle operator*(const Rectangle& r, float scale) {
+  return { r.x * scale, r.y * scale, r.width * scale, r.height * scale };
+}
 
 float remap(float value, float inputStart, float inputEnd, float outputStart, float outputEnd);
 
