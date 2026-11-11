@@ -453,6 +453,35 @@ void build_light_polygon(Vector2 player_world, int camera_x, int camera_y,
   }
 }
 
+bool is_point_lit(Vector2 origin, Vector2 point) {
+  const float dx = point.x - origin.x;
+  const float dy = point.y - origin.y;
+  const float dist = std::sqrt(dx * dx + dy * dy);
+  if (dist > MAX_LIGHT_DISTANCE) {
+    return false;
+  }
+  if (dist < 0.001f) {
+    return true;
+  }
+
+  if (!light_tables_ready) {
+    init_light_tables();
+  }
+
+  const float nx = dx / dist;
+  const float ny = dy / dist;
+  const RayDir dir{ static_cast<int>(nx * DIR_ONE + (nx < 0.0f ? -0.5f : 0.5f)),
+                    static_cast<int>(ny * DIR_ONE + (ny < 0.0f ? -0.5f : 0.5f)) };
+  const int max_dist = static_cast<int>(dist * RAY_SUBPIXEL);
+  const int hit = raycast_walls(to_ray_subpixel(origin.x), to_ray_subpixel(origin.y), dir,
+                                max_dist);
+  return hit >= max_dist - 1;
+}
+
+int bayer_value(int x, int y) {
+  return BAYER_4X4[y & 3][x & 3];
+}
+
 void fill_light_polygon(const ScreenPoint* vertices, int count, int origin_x, int origin_y) {
   fill_polygon(vertices, count, FillMode::Light, origin_x, origin_y, LCD_WHITE);
 }

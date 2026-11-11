@@ -146,7 +146,7 @@ maze allows instead of only along cell axes.
 | State | Trigger | Behaviour | Exits |
 |---|---|---|---|
 | `wander` | default | walk a BFS path to a random floor cell; re-roll on arrival / every few seconds | bladder timer → `seek_target`; lit → `flee`; grabbed → `carried` |
-| `seek_target` | bladder timer expires | BFS to the nearest / least-marked target | reaches target → `peeing`; lit → `flee`; grabbed → `carried` |
+| `seek_target` | bladder timer expires | BFS to the closest **unlit, not-full** target; skip the last target that made the cat flee | reaches target → `peeing`; lit → `flee`; grabbed → `carried` |
 | `peeing` | reached target | stationary ~2 s, target fills; interruptible | done → `wander` (timer reset); lit/grabbed → `flee` / `carried` |
 | `flee` | lit by torch, or player within N tiles while carrying | BFS to the nearest "hide" cell (dark / far from player); speeds up | escape timer → `wander` |
 | `carried` | player grabbed it | follows player; does not act | dropped → `flee`; boxed → removed |
@@ -232,8 +232,8 @@ Reuse directly:
 New pieces:
 
 - BFS pathfinder over the 15×15 cell grid (`pathfind.{h,cpp}`; implemented in M2).
-- Cat struct + state machine (`cat.{h,cpp}`; M2 has `Wander`).
-- Mess meter + target state.
+- Cat struct + state machine (`cat.{h,cpp}`; M2-M3 states: `Wander`, `SeekTarget`, `Peeing`, `Flee`).
+- Mess meter + target state (`target.h`; implemented in M3).
 - Pick-up/carry/deposit logic.
 
 ---
@@ -244,7 +244,7 @@ New pieces:
    movement, 4 static cats (white + outline), rugs + bed + box as passable
    white-outline rects.
 2. **M2 — Cat movement (implemented).** BFS pathfinding + wander + slide collision.
-3. **M3 — Guard loop.** Bladder timer → seek → peeing → mess meter → lose
+3. **M3 — Guard loop (implemented).** Bladder timer → seek → peeing → mess meter → lose
    condition; light scares cats (`flee`).
 4. **M4 — Hunt loop.** Grab / carry (weight) / drop / box deposit → win condition.
 5. **M5 — Difficulty.** Panic scalar + wily last cat + target diversification;

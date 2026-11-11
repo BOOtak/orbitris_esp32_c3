@@ -22,6 +22,12 @@ int integer_sqrt(int value);
 void build_light_polygon(Vector2 player_world, int camera_x, int camera_y,
                          ScreenPoint* out_vertices);
 
+// True when `point` is inside the torch radius and not blocked by a wall.
+bool is_point_lit(Vector2 origin, Vector2 point);
+
+// 4x4 ordered-dither threshold (0..15) for a screen pixel.
+int bayer_value(int x, int y);
+
 // Additive light: draws lit pixels white inside the polygon.
 void fill_light_polygon(const ScreenPoint* vertices, int count, int origin_x, int origin_y);
 

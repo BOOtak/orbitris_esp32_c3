@@ -2,15 +2,24 @@
 
 #include "game_utils.h"
 #include "pathfind.h"
+#include "target.h"
 
 enum class CatState {
   Wander,
+  SeekTarget,
+  Peeing,
+  Flee,
 };
 
 constexpr float CAT_RADIUS = 10.0f;
 constexpr float CAT_SPEED = 1.3f;
+constexpr float CAT_FLEE_SPEED = CAT_SPEED * 1.5f;
 constexpr int CAT_WANDER_REWIND_FRAMES = 240;
 constexpr int CAT_BLOCKED_REPATH_FRAMES = 8;
+constexpr int CAT_FLEE_FRAMES = 180;
+constexpr int CAT_FAILED_TARGET_FRAMES = 900;
+constexpr int CAT_BLADDER_MIN_FRAMES = 300;
+constexpr int CAT_BLADDER_MAX_FRAMES = 600;
 constexpr float CAT_WAYPOINT_REACH = 2.0f;
 constexpr int CAT_MAX_AVOID = 8;
 
@@ -21,11 +30,20 @@ struct Cat {
   int waypoint{};
   int rewind_frames{};
   int blocked_frames{};
+  int bladder_frames{};
+  int flee_frames{};
+  int pee_frames{};
+  int target_index{ -1 };
+  int failed_target{ -1 };
+  int failed_target_frames{};
+  float pee_start_fill{};
   int goal_col{ -1 };
   int goal_row{ -1 };
 };
 
 void cat_init(Cat& cat, int col, int row);
 
+void cat_set_state(Cat& cat, CatState state);
+
 void cat_update(Cat& cat, int self_index, Cat* cats, int cat_count, Vector2 player_pos,
-                float player_radius);
+                float player_radius, PeeTarget* targets, int target_count, float* mess);

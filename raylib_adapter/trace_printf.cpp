@@ -5,6 +5,7 @@
 void do_print(const char *msg)
 {
     printf("%s", msg);
+    fflush(stdout);
 }
 
 uint32_t platform_micros()

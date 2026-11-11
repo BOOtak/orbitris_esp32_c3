@@ -20,4 +20,6 @@ private:
 
   Vector2 player_pos_{};
   Vector2 camera_pos_{};
+  float mess_{};
+  bool lost_{};
 };

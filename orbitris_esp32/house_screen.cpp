@@ -9,6 +9,7 @@
 #include "draw.h"
 #include "input.h"
 #include "light.h"
+#include "target.h"
 #include "trace.h"
 #include "world.h"
 
@@ -23,14 +24,24 @@ constexpr auto PLAYER_START = Vector2{ 3, 11 } * BLOCK_SIZE_PX + PLAYER_RADIUS;
 constexpr float MOVE_SPEED = 1.8f;
 constexpr float RUN_MULTIPLIER = 2.0f;
 
+constexpr float MESS_RUG = 15.0f;
+constexpr float MESS_BED = 30.0f;
+constexpr float PEE_FILL_RUG = 0.5f;
+constexpr float PEE_FILL_BED = 0.5f;
+
 // Passable pee targets: white interiors, black outlines.
-constexpr auto BED = Rectangle{ 4, 12, 2, 2 } * BLOCK_SIZE_PX;
+constexpr auto BED_RECT = Rectangle{ 4, 12, 2, 2 } * BLOCK_SIZE_PX;
+constexpr auto RUG_A_RECT = Rectangle{ 12, 10, 1, 1 } * BLOCK_SIZE_PX;
+constexpr auto RUG_B_RECT = Rectangle{ 12, 12, 1, 1 } * BLOCK_SIZE_PX;
 constexpr auto BOX = Rectangle{ 7, 8, 1, 1 } * BLOCK_SIZE_PX;
 
-constexpr Rectangle RUGS[] = {
-  Rectangle{ 12, 10, 1, 1 } * BLOCK_SIZE_PX,
-  Rectangle{ 12, 12, 1, 1 } * BLOCK_SIZE_PX,
+PeeTarget targets[] = {
+  { BED_RECT, 4, 12, 0.0f, PEE_FILL_BED, MESS_BED },
+  { RUG_A_RECT, 12, 10, 0.0f, PEE_FILL_RUG, MESS_RUG },
+  { RUG_B_RECT, 12, 12, 0.0f, PEE_FILL_RUG, MESS_RUG },
 };
+
+constexpr int TARGET_COUNT = std::size(targets);
 
 struct CatSpawn {
   int col;
@@ -44,7 +55,7 @@ constexpr CatSpawn CAT_SPAWNS[] = {
   { 12, 7 },
 };
 
-constexpr int CAT_COUNT = static_cast<int>(sizeof(CAT_SPAWNS) / sizeof(CAT_SPAWNS[0]));
+constexpr int CAT_COUNT = std::size(CAT_SPAWNS);
 
 Cat cats[CAT_COUNT];
 
@@ -62,6 +73,48 @@ void draw_target(const Rectangle& rect, int camera_x, int camera_y) {
                        static_cast<int>(std::lround(rect.height)), LCD_BLACK);
 }
 
+void draw_target_fill(const Rectangle& rect, float fill, int camera_x, int camera_y) {
+  if (fill <= 0.0f) {
+    return;
+  }
+
+  const int x0 = screen_x(rect.x + 1.0f, camera_x);
+  const int y0 = screen_y(rect.y + 1.0f, camera_y);
+  const int x1 = screen_x(rect.x + rect.width - 2.0f, camera_x);
+  const int y1 = screen_y(rect.y + rect.height - 2.0f, camera_y);
+  const float threshold = fill * 16.0f;
+
+  for (int y = y0; y <= y1; ++y) {
+    for (int x = x0; x <= x1; ++x) {
+      if (threshold > static_cast<float>(bayer_value(x, y)) + 0.5f) {
+        draw_pixel(x, y, LCD_BLACK);
+      }
+    }
+  }
+}
+
+void draw_mess_hud(float mess) {
+  draw_rectangle(6, 6, 72, 8, LCD_BLACK);
+  const int width = static_cast<int>((mess / 100.0f) * 68.0f);
+  if (width > 0) {
+    draw_rectangle(8, 8, width, 4, LCD_WHITE);
+  }
+  draw_rectangle_lines(6, 6, 72, 8, LCD_WHITE);
+}
+
+void draw_lose_overlay() {
+  draw_rectangle(80, 88, 240, 64, LCD_BLACK);
+  draw_rectangle_lines(80, 88, 240, 64, LCD_WHITE);
+
+  const char* title = "HOUSE IS A MESS!";
+  const Vector2 title_size = measure_text(title, 2);
+  print_text(200 - static_cast<int>(title_size.x / 2.0f), 98, 2, title, LCD_WHITE);
+
+  const char* subtitle = "YOU LOSE";
+  const Vector2 subtitle_size = measure_text(subtitle, 2);
+  print_text(200 - static_cast<int>(subtitle_size.x / 2.0f), 124, 2, subtitle, LCD_WHITE);
+}
+
 }  // namespace
 
 HouseScreen::HouseScreen()
@@ -69,6 +122,13 @@ HouseScreen::HouseScreen()
 
 void HouseScreen::init() {
   player_pos_ = PLAYER_START;
+  mess_ = 0.0f;
+  lost_ = false;
+
+  targets[0] = { BED_RECT, 4, 12, 0.0f, PEE_FILL_BED, MESS_BED };
+  targets[1] = { RUG_A_RECT, 12, 10, 0.0f, PEE_FILL_RUG, MESS_RUG };
+  targets[2] = { RUG_B_RECT, 12, 12, 0.0f, PEE_FILL_RUG, MESS_RUG };
+
   std::srand(platform_micros());
   for (int i = 0; i < CAT_COUNT; ++i) {
     cat_init(cats[i], CAT_SPAWNS[i].col, CAT_SPAWNS[i].row);
@@ -84,6 +144,10 @@ void HouseScreen::update_camera() {
 }
 
 Screen* HouseScreen::update() {
+  if (lost_) {
+    return this;
+  }
+
   Vector2 dir{};
   if (is_key_down(ESP_KEY_LEFT)) {
     dir.x -= 1.0f;
@@ -113,7 +177,13 @@ Screen* HouseScreen::update() {
   }
 
   for (int i = 0; i < CAT_COUNT; ++i) {
-    cat_update(cats[i], i, cats, CAT_COUNT, player_pos_, PLAYER_COLLISION_RADIUS);
+    cat_update(cats[i], i, cats, CAT_COUNT, player_pos_, PLAYER_COLLISION_RADIUS, targets,
+               TARGET_COUNT, &mess_);
+  }
+
+  if (mess_ >= 100.0f) {
+    mess_ = 100.0f;
+    lost_ = true;
   }
 
   update_camera();
@@ -128,12 +198,11 @@ void HouseScreen::draw() const {
   const int camera_y = static_cast<int>(std::lround(camera_pos_.y));
   const Vector2 player_screen{ player_pos_.x - camera_x, player_pos_.y - camera_y };
 
-  // Scene: white interiors stay as background; only black outlines and solids
-  // are drawn. The darkness pass hides whatever is not lit.
-  draw_target(BED, camera_x, camera_y);
-
-  for (const auto& rug : RUGS) {
-    draw_target(rug, camera_x, camera_y);
+  // Scene: white interiors stay as background; only black fills/outlines and
+  // solids are drawn. The darkness pass hides whatever is not lit.
+  for (const auto& target : targets) {
+    draw_target_fill(target.rect, target.fill, camera_x, camera_y);
+    draw_target(target.rect, camera_x, camera_y);
   }
 
   draw_target(BOX, camera_x, camera_y);
@@ -154,6 +223,12 @@ void HouseScreen::draw() const {
   build_light_polygon(player_pos_, camera_x, camera_y, vertices);
   draw_darkness_polygon(vertices, LIGHT_RAYS, to_subpixel(player_screen.x),
                         to_subpixel(player_screen.y));
+
+  // HUD and end-state overlay stay visible in the dark.
+  draw_mess_hud(mess_);
+  if (lost_) {
+    draw_lose_overlay();
+  }
 }
 
 void HouseScreen::close() {
