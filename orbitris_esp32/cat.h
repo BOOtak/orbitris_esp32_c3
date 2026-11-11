@@ -9,6 +9,7 @@ enum class CatState {
   SeekTarget,
   Peeing,
   Flee,
+  Carried,
 };
 
 constexpr float CAT_RADIUS = 10.0f;
@@ -39,11 +40,16 @@ struct Cat {
   float pee_start_fill{};
   int goal_col{ -1 };
   int goal_row{ -1 };
+  bool boxed{};
 };
 
 void cat_init(Cat& cat, int col, int row);
 
 void cat_set_state(Cat& cat, CatState state);
+
+void cat_carry(Cat& cat);
+
+void cat_drop(Cat& cat, Vector2 player_pos);
 
 void cat_update(Cat& cat, int self_index, Cat* cats, int cat_count, Vector2 player_pos,
                 float player_radius, PeeTarget* targets, int target_count, float* mess);

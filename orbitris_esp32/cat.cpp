@@ -26,6 +26,7 @@ constexpr char* STATE_NAMES[] = {
   "SeekTarget",
   "Peeing",
   "Flee",
+  "Carried",
 };
 
 int random_bladder_frames() {
@@ -342,7 +343,7 @@ PathStatus move_along_path(Cat& cat, float speed, Vector2 player_pos, float play
   ++avoid_count;
 
   for (int i = 0; i < cat_count && avoid_count < CAT_MAX_AVOID; ++i) {
-    if (i == self_index) {
+    if (i == self_index || cats[i].boxed || cats[i].state == CatState::Carried) {
       continue;
     }
     avoid_centers[avoid_count] = cats[i].pos;
@@ -394,7 +395,7 @@ void move_away_from_player(Cat& cat, Vector2 player_pos, float player_radius, Ca
   ++avoid_count;
 
   for (int i = 0; i < cat_count && avoid_count < CAT_MAX_AVOID; ++i) {
-    if (i == self_index) {
+    if (i == self_index || cats[i].boxed || cats[i].state == CatState::Carried) {
       continue;
     }
     avoid_centers[avoid_count] = cats[i].pos;
@@ -425,6 +426,7 @@ void cat_init(Cat& cat, int col, int row) {
   cat.pee_start_fill = 0.0f;
   cat.goal_col = -1;
   cat.goal_row = -1;
+  cat.boxed = false;
 }
 
 void cat_set_state(Cat& cat, CatState state) {
@@ -436,8 +438,36 @@ void cat_set_state(Cat& cat, CatState state) {
   cat.state = state;
 }
 
+void cat_carry(Cat& cat) {
+  cat_set_state(cat, CatState::Carried);
+  cat.path.count = 0;
+  cat.waypoint = 0;
+  cat.blocked_frames = 0;
+  cat.flee_frames = 0;
+  cat.pee_frames = 0;
+  cat.target_index = -1;
+  cat.failed_target = -1;
+  cat.failed_target_frames = 0;
+}
+
+void cat_drop(Cat& cat, Vector2 player_pos) {
+  cat.pos = player_pos;
+  cat_set_state(cat, CatState::Flee);
+  cat.flee_frames = CAT_FLEE_FRAMES;
+  cat.path.count = 0;
+  cat.waypoint = 0;
+  cat.blocked_frames = 0;
+  cat.target_index = -1;
+  cat.failed_target = -1;
+  cat.failed_target_frames = 0;
+}
+
 void cat_update(Cat& cat, int self_index, Cat* cats, int cat_count, Vector2 player_pos,
                 float player_radius, PeeTarget* targets, int target_count, float* mess) {
+  if (cat.boxed || cat.state == CatState::Carried) {
+    return;
+  }
+
   if (cat.failed_target_frames > 0) {
     --cat.failed_target_frames;
     if (cat.failed_target_frames == 0) {

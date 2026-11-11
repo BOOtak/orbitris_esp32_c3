@@ -10,7 +10,7 @@ Handheld game repo for a 400x240, 1-bit ESP32-C3 device. One platform layer is s
 - `third_party/raylib` - git submodule used only by the desktop build.
 - `DESIGN.md` - Cat Guard game design document and milestones M1-M6.
 
-The current boot screen is `HouseScreen` (Cat Guard M1-M3, subtractive darkness). The original Orbital Tetris screens remain.
+The current boot screen is `HouseScreen` (Cat Guard M1-M4, subtractive darkness). The original Orbital Tetris screens remain.
 
 ## Build and run
 
@@ -41,16 +41,16 @@ Shared code may call only symbols implemented by both adapters: `lcd_draw_pixel`
 - `game_main.cpp` is the screen state machine. `rules[]` selects transitions; `init_game()` constructs screens. A new `Screen` subclass needs registration in `screen.h`/`screen.cpp`, construction in `init_game()`, and usually a transition rule. Current boot is `screens::house_screen`.
 - `world.{h,cpp}`: 15x15 maze (720x720 px world, 48px cells = 3x16px blocks), `is_wall_block`, wall-only collision (`deepest_contact_walls`, `move_with_collision`, `move_with_collision_circles`), and circle drawing. Edit the maze in `world.cpp`.
 - `pathfind.{h,cpp}`: 4-neighbor BFS over the 15x15 cell grid. `find_path` returns cell waypoints; `cell_to_world`/`world_to_cell` convert between cells and pixels.
-- `cat.{h,cpp}`: `Cat` state machine (`Wander`, `SeekTarget`, `Peeing`, `Flee`). Cats follow BFS waypoints with `move_with_collision_circles`, string-pull paths into diagonal segments, collide with the player and each other, re-plan when blocked, and flee from lit cells toward the hemisphere away from the player (rejecting waypoints that step toward the player, falling back to moving directly away when cornered). They seek only unlit non-full targets by closest path, excluding the last target that made them flee; peeing feeds the shared mess meter.
+- `cat.{h,cpp}`: `Cat` state machine (`Wander`, `SeekTarget`, `Peeing`, `Flee`, `Carried`). Cats follow BFS waypoints with `move_with_collision_circles`, string-pull paths into diagonal segments, collide with the player and each other, re-plan when blocked, and flee from lit cells toward the hemisphere away from the player (rejecting waypoints that step toward the player, falling back to moving directly away when cornered). They seek only unlit non-full targets by closest path, excluding the last target that made them flee; peeing feeds the shared mess meter. `cat_carry`/`cat_drop` handle the hunt loop's carried state.
 - `target.h`: `PeeTarget` (rect, nav cell, visual fill, fill step, mess weight) and `PEE_FRAMES`.
 - `light.{h,cpp}`: fixed-point 360-degree light pipeline: DDA wall raycast, scanline polygon fill, Bayer dither. `draw_darkness_polygon` is the subtractive path used by the game; `is_point_lit` is the LOS/radius test used by cat AI; `fill_light_polygon`/`fill_solid_polygon` are additive/solid helpers kept for reuse.
-- `house_screen.{h,cpp}`: Cat Guard M1-M3. Render order is white fill, black scene (target fills/outlines/player), then darkness; HUD and lose overlay are drawn after darkness. Cats, rugs, bed, and box are passable. Controls: arrows move, B runs. Player start/speed, cat spawns, target layout, mess weights, and bladder/pee/flee timers are tunable at the top of `house_screen.cpp` and in `cat.h`.
+- `house_screen.{h,cpp}`: Cat Guard M1-M4. Render order is white fill, black scene (target fills/outlines/player/cats), then darkness; HUD and win/lose overlays are drawn after darkness. Cats, rugs, bed, and box are passable. Boxed cats are drawn as small circles inside the box. Controls: arrows move, A grabs/drops/deposits, B runs (disabled while carrying). Player start/speed, cat spawns, target layout, mess weights, carry speed, and bladder/pee/flee timers are tunable at the top of `house_screen.cpp` and in `cat.h`.
 - The C3 has no FPU. Keep per-pixel light math fixed-point/integer and batch LCD writes through `lcd_set_byte`/`lcd_and_byte`; avoid adding float math to the lighting hot path.
 - Persistence stores raw `Stats`/`HighscoreTable` blobs. Changing their layout invalidates `stats.dat`/`highscores.dat` and device NVS data.
 
 ## Input
 
-Desktop controls: arrow keys, `Z` = A, `X` = B. Device buttons are active-low with pull-ups; `ESP_KEY_*` values in `input.h` are GPIO numbers. `HouseScreen` uses B for run.
+Desktop controls: arrow keys, `Z` = A, `X` = B. Device buttons are active-low with pull-ups; `ESP_KEY_*` values in `input.h` are GPIO numbers. `HouseScreen`: arrows move, A interacts, B runs (not while carrying).
 
 ## Style
 

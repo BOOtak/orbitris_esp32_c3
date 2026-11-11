@@ -234,7 +234,7 @@ New pieces:
 - BFS pathfinder over the 15×15 cell grid (`pathfind.{h,cpp}`; implemented in M2).
 - Cat struct + state machine (`cat.{h,cpp}`; M2-M3 states: `Wander`, `SeekTarget`, `Peeing`, `Flee`).
 - Mess meter + target state (`target.h`; implemented in M3).
-- Pick-up/carry/deposit logic.
+- Pick-up/carry/deposit logic (implemented in M4).
 
 ---
 
@@ -246,7 +246,7 @@ New pieces:
 2. **M2 — Cat movement (implemented).** BFS pathfinding + wander + slide collision.
 3. **M3 — Guard loop (implemented).** Bladder timer → seek → peeing → mess meter → lose
    condition; light scares cats (`flee`).
-4. **M4 — Hunt loop.** Grab / carry (weight) / drop / box deposit → win condition.
+4. **M4 — Hunt loop (implemented).** Grab / carry (weight) / drop / box deposit → win condition.
 5. **M5 — Difficulty.** Panic scalar + wily last cat + target diversification;
    tune speeds/timers.
 6. **M6 — Polish.** Eyes in the dark, win/lose screens, scoring + persistence,

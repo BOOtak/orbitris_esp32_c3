@@ -22,4 +22,6 @@ private:
   Vector2 camera_pos_{};
   float mess_{};
   bool lost_{};
+  bool won_{};
+  int carried_index_{ -1 };
 };
